@@ -2,7 +2,10 @@ package forms;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
+import java.net.URL;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -69,6 +72,8 @@ public class MainForm extends JFrame {
     private JButton btnShift;
     private JButton btnEnter;
     private JComboBox controllerList;
+    private JButton configure;
+    private JButton about;
 
     private int curShift = 0;
     private String[] curKeyMap = new String[] {
@@ -112,6 +117,16 @@ public class MainForm extends JFrame {
         } catch (AWTException e) {
             e.printStackTrace();
         }
+
+        about.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                try {
+                    Desktop.getDesktop().browse(new URL("http://coffeecone.com/gameboard").toURI());
+                    minimizeWindow();
+                } catch (Exception ignored) {}
+            }
+        });
     }
 
     public void populateButtons(int type) {

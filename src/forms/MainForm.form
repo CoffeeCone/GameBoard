@@ -529,7 +529,7 @@
       </component>
       <component id="2b566" class="javax.swing.JLabel" binding="status">
         <constraints>
-          <grid row="7" column="0" row-span="1" col-span="6" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
+          <grid row="7" column="0" row-span="1" col-span="8" vsize-policy="0" hsize-policy="0" anchor="8" fill="0" indent="0" use-parent-layout="false"/>
           <forms/>
         </constraints>
         <properties>
@@ -542,6 +542,26 @@
           <forms/>
         </constraints>
         <properties/>
+      </component>
+      <component id="d8e91" class="javax.swing.JButton" binding="configure">
+        <constraints>
+          <grid row="7" column="8" row-span="1" col-span="3" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+          <forms/>
+        </constraints>
+        <properties>
+          <borderPainted value="false"/>
+          <text value="Configure"/>
+        </properties>
+      </component>
+      <component id="891f7" class="javax.swing.JButton" binding="about">
+        <constraints>
+          <grid row="7" column="11" row-span="1" col-span="1" vsize-policy="0" hsize-policy="3" anchor="0" fill="1" indent="0" use-parent-layout="false"/>
+          <forms/>
+        </constraints>
+        <properties>
+          <borderPainted value="false"/>
+          <text value="❤"/>
+        </properties>
       </component>
     </children>
   </grid>
