@@ -9,6 +9,8 @@ import org.ini4j.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 
 /**
@@ -50,11 +52,29 @@ public class Main {
             MsgBox.error(ioe.getMessage(),"Error");
         }
 
-
         mainForm.minimizeWindow();
 
         foundControllers = new ArrayList<Controller>();
         searchControllers();
+
+    }
+
+    private static void searchControllers() {
+        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+
+        mainForm.setStatus("Searching for available controllers...");
+
+        foundControllers.clear();
+        mainForm.clearControllers();
+
+        for (Controller controller : controllers) {
+            if (controller.getType() == Controller.Type.STICK ||
+                    controller.getType() == Controller.Type.GAMEPAD) {
+                foundControllers.add(controller);
+                mainForm.addController(controller.getName() + " (" + controller.getType().toString() + ")");
+            }
+        }
+        mainForm.setStatus("Controllers loaded.");
 
         if (foundControllers.isEmpty()) {
             mainForm.setStatus("No controller found.");
@@ -65,25 +85,8 @@ public class Main {
 
     }
 
-    private static void searchControllers() {
-        Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
-
-        for (int i = 0; i < controllers.length; i++) {
-            Controller controller = controllers[i];
-
-            if (controller.getType() == Controller.Type.STICK ||
-                    controller.getType() == Controller.Type.GAMEPAD) {
-                foundControllers.add(controller);
-                mainForm.addController(controller.getName() + " (" + controller.getType().toString() + ")");
-            }
-        }
-    }
-
     private static void startController() {
-        int[] hatFlag = new int[] {0,0,0,0};
-        int[] btnFlag = new int[] {0,0};
-
-        File test = new File("Hello world");
+        String prevDir = "center";
 
         while (true) {
 
@@ -94,6 +97,7 @@ public class Main {
             // Polls the controller and checks if it has been unplugged.
             if (!controller.poll()) {
                 mainForm.setStatus("Controller unplugged!");
+                mainForm.restoreWindow();
                 break;
             }
 
@@ -145,73 +149,128 @@ public class Main {
                         }
                     } else if (mainForm.getState() == Frame.ICONIFIED) {
                         if (Float.compare(value, Component.POV.UP) == 0) {
+                            if (!prevDir.equals("up")) {
+                                mainForm.releaseArrowKey();
+                                prevDir = "up";
+                            }
                             mainForm.pressUp();
                         } else if (Float.compare(value, Component.POV.DOWN) == 0) {
+                            if (!prevDir.equals("down")) {
+                                mainForm.releaseArrowKey();
+                                prevDir = "down";
+                            }
                             mainForm.pressDown();
                         } else if (Float.compare(value, Component.POV.LEFT) == 0) {
+                            if (!prevDir.equals("left")) {
+                                mainForm.releaseArrowKey();
+                                prevDir = "left";
+                            }
                             mainForm.pressLeft();
                         } else if (Float.compare(value, Component.POV.RIGHT) == 0) {
+                            if (!prevDir.equals("right")) {
+                                mainForm.releaseArrowKey();
+                                prevDir = "right";
+                            }
                             mainForm.pressRight();
                         } else {
+                            prevDir = "center";
                             mainForm.releaseArrowKey();
                         }
                     }
 
                 } else { // Buttons
-                    System.out.println((String.valueOf(Component.Identifier.Button._1) == "1"));
-//                    if (compID == Component.Identifier.Button._0 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // X
-//                        mainForm.pressButton();
-//                    } else if (compID == Component.Identifier.Button._0 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // X
-//                        mainForm.pressLeftMouseBtn();
-//                    } else if (compID == Component.Identifier.Button._0 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // X
-//                        mainForm.releaseLeftMouseBtn();
-//                    } else if (compID == Component.Identifier.Button._1 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // O
-//                        mainForm.pressBackspace(true);
-//                    } else if (compID == Component.Identifier.Button._1 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // O
-//                        mainForm.pressBackspace(false);
-//                    } else if (compID == Component.Identifier.Button._1 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // O
-//                        mainForm.pressRightMouseBtn();
-//                    } else if (compID == Component.Identifier.Button._1 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // O
-//                        mainForm.releaseRightMouseBtn();
-//                    } else if (compID == Component.Identifier.Button._2 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // []
-//                        mainForm.pressBackspace(false);
-//                    } else if (compID == Component.Identifier.Button._2 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // []
-//                        mainForm.pressWinKey();
-//                    } else if (compID == Component.Identifier.Button._2 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // []
-//                        mainForm.releaseWinKey();
-//                    } else if (compID == Component.Identifier.Button._3 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // /\
-//                        mainForm.pressSpace();
-//                    } else if (compID == Component.Identifier.Button._3 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // /\
-//                        mainForm.pressMiddleMouseBtn();
-//                    } else if (compID == Component.Identifier.Button._3 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // /\
-//                        mainForm.releaseMiddleMouseBtn();
-//                    } else if (compID == Component.Identifier.Button._4 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // L
-//                        mainForm.pressLeft();
-//                    } else if (compID == Component.Identifier.Button._4 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // L
-//                        mainForm.releaseArrowKey();
-//                    } else if (compID == Component.Identifier.Button._5 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // R
-//                        mainForm.pressRight();
-//                    } else if (compID == Component.Identifier.Button._5 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // R
-//                        mainForm.releaseArrowKey();
-//                    } else if (compID == Component.Identifier.Button._6 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // Select
-//                        mainForm.pressShift();
-//                    } else if (compID == Component.Identifier.Button._6 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // Select
-//                        mainForm.pressEnter();
-//                    } else if (compID == Component.Identifier.Button._7 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // Start
-//                        mainForm.minimizeWindow();
-//                    } else if (compID == Component.Identifier.Button._7 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // Start
-//                        mainForm.restoreWindow();
-//                    }
+                    prevDir = "center";
+                    mainForm.releaseArrowKey();
+
+                    if (mainForm.getState() == Frame.ICONIFIED) {
+
+                        // Desktop mode
+
+                        try {
+                            if (pref.get("desktopmode","mouse_leftclick").equals(String.valueOf(compID))) { // Left Click
+                                if (value == 1.0f) {mainForm.pressLeftMouseBtn();} else {mainForm.releaseLeftMouseBtn();}
+                            } else if (pref.get("desktopmode","mouse_rightclick").equals(String.valueOf(compID))) { // Right Click
+                                if (value == 1.0f) {mainForm.pressRightMouseBtn();} else {mainForm.releaseRightMouseBtn();}
+                            } else if (pref.get("desktopmode","mouse_middleclick").equals(String.valueOf(compID))) { // Middle Click
+                                if (value == 1.0f) {mainForm.pressMiddleMouseBtn();} else {mainForm.releaseMiddleMouseBtn();}
+                            } else if (pref.get("desktopmode","key_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
+                                mainForm.pressEnter();
+                            } else if (pref.get("desktopmode","key_windows").equals(String.valueOf(compID))) { // Windows
+                                if (value == 1.0f) {mainForm.pressWinKey();} else {mainForm.releaseWinKey();}
+                            } else if (pref.get("desktopmode","key_esc").equals(String.valueOf(compID)) && value == 1.0f) { // Escape
+                                mainForm.pressEscape();
+                            } else if (pref.get("desktopmode","key_alttab").equals(String.valueOf(compID))) { // Alt + Tab
+                                if (value == 1.0f) {mainForm.pressAltTab();} else {mainForm.releaseAltTab();}
+                            } else if (pref.get("desktopmode","key_altf4").equals(String.valueOf(compID)) && value == 1.0f) { // Alt + F4
+                                mainForm.pressAltF4();
+                            } else if (pref.get("gameboardmode","gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Show
+                                mainForm.restoreWindow();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    } else if (mainForm.getState() == Frame.NORMAL) {
+
+                        // GameBoard mode
+
+                        try {
+                            if (pref.get("gameboardmode","gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Hide
+                                mainForm.minimizeWindow();
+                            } else if (pref.get("gameboardmode","gb_confirm").equals(String.valueOf(compID)) && value == 1.0f) { // Confirm
+                                mainForm.pressButton();
+                            } else if (pref.get("gameboardmode","gb_remove").equals(String.valueOf(compID)) && value == 1.0f) { // Remove
+                                mainForm.pressBackspace(false);
+                            } else if (pref.get("gameboardmode","gb_removecont").equals(String.valueOf(compID))) { // Remove Cont.
+                                if (value == 1.0f) {mainForm.pressBackspace(true);} else {mainForm.pressBackspace(false);}
+                            } else if (pref.get("gameboardmode","gb_changecase").equals(String.valueOf(compID)) && value == 1.0f) { // Change Case
+                                mainForm.pressShift();
+                            } else if (pref.get("gameboardmode","gb_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
+                                mainForm.pressEnter();
+                            } else if (pref.get("gameboardmode","gb_left").equals(String.valueOf(compID)) && value == 1.0f) { // Left
+                                if (!prevDir.equals("left")) {
+                                    mainForm.releaseArrowKey();
+                                    prevDir = "left";
+                                }
+                                mainForm.pressLeft();
+                            } else if (pref.get("gameboardmode","gb_right").equals(String.valueOf(compID)) && value == 1.0f) { // Right
+                                if (!prevDir.equals("right")) {
+                                    mainForm.releaseArrowKey();
+                                    prevDir = "right";
+                                }
+                                mainForm.pressRight();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+
+                    }
+
                 }
             }
 
             try {
                 Thread.sleep(25);
             } catch (InterruptedException e) {
-                e.printStackTrace();
+                System.out.println(e.getMessage());
             }
 
         }
+
+        try {
+            Class<?> clazz = Class.forName("net.java.games.input.DefaultControllerEnvironment");
+            Constructor<?> defaultConstructor = clazz.getDeclaredConstructor();
+            defaultConstructor.setAccessible(true); // set visibility to public
+
+            Field defaultEnvironementField = ControllerEnvironment.class.getDeclaredField("defaultEnvironment");
+            defaultEnvironementField.setAccessible(true);
+            defaultEnvironementField.set(ControllerEnvironment.getDefaultEnvironment(), defaultConstructor.newInstance());
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        searchControllers();
+
     }
 
 }

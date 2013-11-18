@@ -149,7 +149,7 @@ public class MainForm extends JFrame {
         try {
             mouseTimerX.cancel();
             mouseTimerX.purge();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
 
         if (Math.abs(x) == x) {
@@ -183,7 +183,7 @@ public class MainForm extends JFrame {
         try {
             mouseTimerY.cancel();
             mouseTimerY.purge();
-        } catch (Exception e) {
+        } catch (Exception ignored) {
         }
 
         if (Math.abs(y) == y) {
@@ -280,6 +280,8 @@ public class MainForm extends JFrame {
     }
 
     public void selectButton(String direction) {
+        toFront();
+
         if (direction == "up" && curBtn >= 12 && curBtn < 48) {
             btn[curBtn].setBorderPainted(false);
             curBtn = curBtn-12;
@@ -322,8 +324,7 @@ public class MainForm extends JFrame {
             try {
                 backspaceTimer.cancel();
                 backspaceTimer.purge();
-            } catch (Exception e) {
-            }
+            } catch (Exception ignored) {}
             typeBot.keyPress(KeyEvent.VK_BACK_SPACE);
         }
     }
@@ -335,7 +336,6 @@ public class MainForm extends JFrame {
             public void run() {
                 if (continueBackspace) {
                     typeBot.keyPress(KeyEvent.VK_BACK_SPACE);
-                } else {
                 }
             }
         }, 75, 75);
@@ -345,9 +345,30 @@ public class MainForm extends JFrame {
         typeBot.keyPress(KeyEvent.VK_SPACE);
     }
 
+    public void pressEscape() {
+        typeBot.keyPress(KeyEvent.VK_ESCAPE);
+    }
+
+    public void pressAltTab() {
+        typeBot.keyPress(KeyEvent.VK_ALT);
+        typeBot.keyPress(KeyEvent.VK_TAB);
+    }
+
+    public void releaseAltTab() {
+        typeBot.keyRelease(KeyEvent.VK_ALT);
+        typeBot.keyRelease(KeyEvent.VK_TAB);
+    }
+
+    public void pressAltF4() {
+        doType(KeyEvent.VK_ALT, KeyEvent.VK_F4);
+    }
+
     public void releaseArrowKey() {
-        arrowKeysTimer.cancel();
-        arrowKeysTimer.purge();
+        try {
+            arrowKeysTimer.cancel();
+            arrowKeysTimer.purge();
+        } catch (Exception ignored) {
+        }
     }
 
     public void pressUp() {
@@ -533,14 +554,20 @@ public class MainForm extends JFrame {
             return;
         }
 
-        typeBot.keyPress(keyCodes[offset]);
-        doType(keyCodes, offset + 1, length - 1);
-        typeBot.keyRelease(keyCodes[offset]);
+        try {
+            typeBot.keyPress(keyCodes[offset]);
+            doType(keyCodes, offset + 1, length - 1);
+            typeBot.keyRelease(keyCodes[offset]);
+        } catch (Exception ignore) {}
 
     }
 
     public void setStatus(String message) {
         status.setText("Status: " + message);
+    }
+
+    public void clearControllers() {
+        controllerList.removeAllItems();
     }
 
     public void addController(String controller) {
