@@ -163,7 +163,7 @@ public class MainForm extends JFrame {
                         typeBot.mouseMove((MouseInfo.getPointerInfo().getLocation().x + (Math.abs(x)-2)), MouseInfo.getPointerInfo().getLocation().y);
                     }
                 }
-            }, 25, 10);
+            }, 25, 25);
         }  else {
             mouseTimerX = new Timer();
             mouseTimerX.schedule(new TimerTask() {
@@ -175,7 +175,7 @@ public class MainForm extends JFrame {
                         typeBot.mouseMove((MouseInfo.getPointerInfo().getLocation().x - (Math.abs(x)-2)), MouseInfo.getPointerInfo().getLocation().y);
                     }
                 }
-            }, 25, 10);
+            }, 25, 25);
         }
     }
 

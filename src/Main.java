@@ -4,9 +4,11 @@ import net.java.games.input.Controller;
 import net.java.games.input.ControllerEnvironment;
 import net.java.games.input.Event;
 import net.java.games.input.EventQueue;
+import org.ini4j.*;
 
 import java.awt.*;
-import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 
 /**
@@ -19,13 +21,37 @@ import java.util.ArrayList;
  */
 
 public class Main {
-    final static MainForm mainForm = new MainForm();
+    public static String version = "1.0";
+
+    public final static MainForm mainForm = new MainForm();
     private static ArrayList<Controller> foundControllers;
+    private static File filePref = new File("GameBoard.ini");
+    private static Ini pref = new Ini();
 
     public static void main(String[] args) {
-        mainForm.minimizeWindow();
+        mainForm.setStatus("Loading settings...");
 
-        mainForm.setStatus("Getting controller list.");
+        // Check if preference file exists.
+        if (!filePref.exists()) {
+            mainForm.setStatus("Preference file can't be found.");
+            mainForm.setAlwaysOnTop(false);
+            System.out.println("error");
+            MsgBox.error("Can't find the preference file. Please re-download at http://coffeecone.com/gameboard to fix the issue.", "Error");
+        }
+
+        // Check if required keys are intact in the preference file.
+        try {
+            pref.load(filePref);
+            if (!pref.get("about","version").equals(version)) {
+                mainForm.setStatus("Preference file mismatch.");
+                MsgBox.error("You are using a mismatched preference file.", "Error");
+            }
+        } catch (IOException ioe) {
+            MsgBox.error(ioe.getMessage(),"Error");
+        }
+
+
+        mainForm.minimizeWindow();
 
         foundControllers = new ArrayList<Controller>();
         searchControllers();
@@ -56,6 +82,8 @@ public class Main {
     private static void startController() {
         int[] hatFlag = new int[] {0,0,0,0};
         int[] btnFlag = new int[] {0,0};
+
+        File test = new File("Hello world");
 
         while (true) {
 
@@ -130,49 +158,50 @@ public class Main {
                     }
 
                 } else { // Buttons
-                    if (compID == Component.Identifier.Button._0 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // X
-                        mainForm.pressButton();
-                    } else if (compID == Component.Identifier.Button._0 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // X
-                        mainForm.pressLeftMouseBtn();
-                    } else if (compID == Component.Identifier.Button._0 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // X
-                        mainForm.releaseLeftMouseBtn();
-                    } else if (compID == Component.Identifier.Button._1 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // O
-                        mainForm.pressBackspace(true);
-                    } else if (compID == Component.Identifier.Button._1 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // O
-                        mainForm.pressBackspace(false);
-                    } else if (compID == Component.Identifier.Button._1 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // O
-                        mainForm.pressRightMouseBtn();
-                    } else if (compID == Component.Identifier.Button._1 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // O
-                        mainForm.releaseRightMouseBtn();
-                    } else if (compID == Component.Identifier.Button._2 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // []
-                        mainForm.pressBackspace(false);
-                    } else if (compID == Component.Identifier.Button._2 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // []
-                        mainForm.pressWinKey();
-                    } else if (compID == Component.Identifier.Button._2 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // []
-                        mainForm.releaseWinKey();
-                    } else if (compID == Component.Identifier.Button._3 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // /\
-                        mainForm.pressSpace();
-                    } else if (compID == Component.Identifier.Button._3 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // /\
-                        mainForm.pressMiddleMouseBtn();
-                    } else if (compID == Component.Identifier.Button._3 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // /\
-                        mainForm.releaseMiddleMouseBtn();
-                    } else if (compID == Component.Identifier.Button._4 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // L
-                        mainForm.pressLeft();
-                    } else if (compID == Component.Identifier.Button._4 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // L
-                        mainForm.releaseArrowKey();
-                    } else if (compID == Component.Identifier.Button._5 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // R
-                        mainForm.pressRight();
-                    } else if (compID == Component.Identifier.Button._5 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // R
-                        mainForm.releaseArrowKey();
-                    } else if (compID == Component.Identifier.Button._6 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // Select
-                        mainForm.pressShift();
-                    } else if (compID == Component.Identifier.Button._6 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // Select
-                        mainForm.pressEnter();
-                    } else if (compID == Component.Identifier.Button._7 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // Start
-                        mainForm.minimizeWindow();
-                    } else if (compID == Component.Identifier.Button._7 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // Start
-                        mainForm.restoreWindow();
-                    }
+                    System.out.println((String.valueOf(Component.Identifier.Button._1) == "1"));
+//                    if (compID == Component.Identifier.Button._0 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // X
+//                        mainForm.pressButton();
+//                    } else if (compID == Component.Identifier.Button._0 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // X
+//                        mainForm.pressLeftMouseBtn();
+//                    } else if (compID == Component.Identifier.Button._0 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // X
+//                        mainForm.releaseLeftMouseBtn();
+//                    } else if (compID == Component.Identifier.Button._1 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // O
+//                        mainForm.pressBackspace(true);
+//                    } else if (compID == Component.Identifier.Button._1 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // O
+//                        mainForm.pressBackspace(false);
+//                    } else if (compID == Component.Identifier.Button._1 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // O
+//                        mainForm.pressRightMouseBtn();
+//                    } else if (compID == Component.Identifier.Button._1 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // O
+//                        mainForm.releaseRightMouseBtn();
+//                    } else if (compID == Component.Identifier.Button._2 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // []
+//                        mainForm.pressBackspace(false);
+//                    } else if (compID == Component.Identifier.Button._2 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // []
+//                        mainForm.pressWinKey();
+//                    } else if (compID == Component.Identifier.Button._2 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // []
+//                        mainForm.releaseWinKey();
+//                    } else if (compID == Component.Identifier.Button._3 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // /\
+//                        mainForm.pressSpace();
+//                    } else if (compID == Component.Identifier.Button._3 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // /\
+//                        mainForm.pressMiddleMouseBtn();
+//                    } else if (compID == Component.Identifier.Button._3 && value != 1.0f && mainForm.getState() == Frame.ICONIFIED) { // /\
+//                        mainForm.releaseMiddleMouseBtn();
+//                    } else if (compID == Component.Identifier.Button._4 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // L
+//                        mainForm.pressLeft();
+//                    } else if (compID == Component.Identifier.Button._4 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // L
+//                        mainForm.releaseArrowKey();
+//                    } else if (compID == Component.Identifier.Button._5 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // R
+//                        mainForm.pressRight();
+//                    } else if (compID == Component.Identifier.Button._5 && value != 1.0f && mainForm.getState() == Frame.NORMAL) { // R
+//                        mainForm.releaseArrowKey();
+//                    } else if (compID == Component.Identifier.Button._6 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // Select
+//                        mainForm.pressShift();
+//                    } else if (compID == Component.Identifier.Button._6 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // Select
+//                        mainForm.pressEnter();
+//                    } else if (compID == Component.Identifier.Button._7 && value == 1.0f && mainForm.getState() == Frame.NORMAL) { // Start
+//                        mainForm.minimizeWindow();
+//                    } else if (compID == Component.Identifier.Button._7 && value == 1.0f && mainForm.getState() == Frame.ICONIFIED) { // Start
+//                        mainForm.restoreWindow();
+//                    }
                 }
             }
 
