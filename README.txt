@@ -2,6 +2,8 @@ GameBoard v1.0
 by Shedo Surashu
 http://coffeecone.com/gameboard
 
+Download: https://github.com/CoffeeCone/GameBoard/releases
+
 What is it?
 -----------
 An on-screen keyboard for gamepads.
