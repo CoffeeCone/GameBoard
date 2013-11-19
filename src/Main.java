@@ -47,7 +47,9 @@ public class Main {
             "gb_changecase", // 13
             "gb_enter", // 14
             "gb_left", // 15
-            "gb_right" // 16
+            "gb_right", // 16
+            "key_ctrltab", // 17
+            "key_ctrlshifttab" // 18
     };
 
     public final static MainForm w = new MainForm();
@@ -73,7 +75,6 @@ public class Main {
         if (!filePref.exists()) {
             w.restore(true);
             w.status("Preference file can't be found.");
-            System.out.println("error");
             MsgBox.error("Can't find the preference file. Please re-download at http://coffeecone.com/gameboard to fix the issue.", "Error");
         }
 
@@ -198,7 +199,6 @@ public class Main {
             pref.put("about", "lastused", w.getCon());
         }
 
-        System.out.println("debug1");
         savePrefs();
 
         if (foundControllers.isEmpty()) {
@@ -231,8 +231,6 @@ public class Main {
     private static void startController() {
         String hatDir = "center";
         boolean breakLoop = false;
-
-        System.out.println("Loop started.");
 
         while (true) {
 
@@ -374,7 +372,6 @@ public class Main {
                         } else {
 
                             counter = 0;
-                            System.out.println("debug2");
                             savePrefs();
                             beingConfigured = false;
                             w.status("Ready.");
@@ -420,6 +417,10 @@ public class Main {
                                     w.pressAltF4();
                                 } else if (pref.get(c,keyBinds[8]).equals(String.valueOf(compID)) && value == 1.0f) { // Show
                                     w.restore(false);
+                                } else if (pref.get(c,keyBinds[17]).equals(String.valueOf(compID)) && value == 1.0f) { // Ctrl + Tab
+                                    w.pressCtrlTab();
+                                } else if (pref.get(c,keyBinds[18]).equals(String.valueOf(compID)) && value == 1.0f) { // Crel + Shift + Tab
+                                    w.pressCtrlShiftTab();
                                 }
                             } catch (Exception e) {
                                 MsgBox.error(e.getMessage(),"Execution Error");
@@ -479,7 +480,6 @@ public class Main {
         }
 
         isLooping = false;
-        System.out.println("Stopped looping.");
 
         if (!breakLoop && !beingConfigured) {
             forceResetControllers();
@@ -524,6 +524,7 @@ public class Main {
         ignoreBtn = false;
         beingConfigured = false;
         w.enableList(true);
+        w.enableConf(true);
         w.confIsCancel(false);
     }
 

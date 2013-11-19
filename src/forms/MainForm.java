@@ -371,6 +371,14 @@ public class MainForm extends JFrame {
         typeBot.keyRelease(KeyEvent.VK_TAB);
     }
 
+    public void pressCtrlTab() {
+        doType(KeyEvent.VK_CONTROL, KeyEvent.VK_TAB);
+    }
+
+    public void pressCtrlShiftTab() {
+        doType(KeyEvent.VK_CONTROL, KeyEvent.VK_SHIFT, KeyEvent.VK_TAB);
+    }
+
     public void pressAltF4() {
         doType(KeyEvent.VK_ALT, KeyEvent.VK_F4);
     }
