@@ -7,6 +7,8 @@ import net.java.games.input.EventQueue;
 import org.ini4j.*;
 
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Constructor;
@@ -48,9 +50,20 @@ public class Main {
                 mainForm.setStatus("Preference file mismatch.");
                 MsgBox.error("You are using a mismatched preference file.", "Error");
             }
+//            System.out.println(pref.get("FuSGamePad","mouse_leftclick"));
+//            if (pref.get("FuSa GamePd","mouse_leftclick") == "") {
+//                mainForm.setStatus("Null detected.");
+//                MsgBox.error("No button assigned here.", "Error");
+//            }
         } catch (IOException ioe) {
             MsgBox.error(ioe.getMessage(),"Error");
         }
+
+        mainForm.about.addActionListener(new ActionListener() {
+            public void actionPerformed(ActionEvent e) {
+                MsgBox.info("GameBoard v" + version + "\n\nAn open-source on-screen keyboard for gamepads.\nVisit http://coffeecone.com/gameboard for more information.\n\nCopyright (c) 2013+ Shedo Surashu (CoffeeCone.com)","About");
+            }
+        });
 
         mainForm.minimizeWindow();
 
@@ -110,19 +123,92 @@ public class Main {
 
     }
 
+    public static void configureController() {
+
+    }
+
+    private static boolean configuredController(String c)  {
+        boolean isConfigured = false;
+
+        if (pref.get(c,"mouse_leftclick") != null && !pref.get(c,"mouse_leftclick").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"mouse_rightclick") != null && !pref.get(c,"mouse_rightclick").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"mouse_middleclick") != null && !pref.get(c,"mouse_middleclick").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"key_enter") != null && !pref.get(c,"key_enter").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"key_windows") != null && !pref.get(c,"key_windows").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"key_esc") != null && !pref.get(c,"key_esc").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"key_alttab") != null && !pref.get(c,"key_alttab").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"key_altf4") != null && !pref.get(c,"key_altf4").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_showhide") != null && !pref.get(c,"gb_showhide").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_confirm") != null && !pref.get(c,"gb_confirm").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_remove") != null && !pref.get(c,"gb_remove").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_removecont") != null && !pref.get(c,"gb_removecont").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_space") != null && !pref.get(c,"gb_space").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_changecase") != null && !pref.get(c,"gb_changecase").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_enter") != null && !pref.get(c,"gb_enter").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_left") != null && !pref.get(c,"gb_left").equals("")) {
+            isConfigured = true;
+        } else if (pref.get(c,"gb_right") != null && !pref.get(c,"gb_right").equals("")) {
+            isConfigured = true;
+        }
+//        pref.put(c,"mouse_leftclick","");
+//        pref.put(c,"mouse_rightclick","");
+//        pref.put(c,"mouse_middleclick","");
+//        pref.put(c,"key_enter","");
+//        pref.put(c,"key_windows","");
+//        pref.put(c,"key_esc","");
+//        pref.put(c,"key_alttab","");
+//        pref.put(c,"key_altf4","");
+//        pref.put(c,"gb_showhide","");
+//        pref.put(c,"gb_confirm","");
+//        pref.put(c,"gb_remove","");
+//        pref.put(c,"gb_removecont","");
+//        pref.put(c,"gb_space","");
+//        pref.put(c,"gb_changecase","");
+//        pref.put(c,"gb_enter","");
+//        pref.put(c,"gb_left","");
+//        pref.put(c,"gb_right","");
+
+        return isConfigured;
+    }
+
     private static void startController() {
         String prevDir = "center";
+        Boolean breakLoop = false;
 
         while (true) {
 
             // Get the selected item index on combolist.
             int controllerIndex = mainForm.getController();
             Controller controller = foundControllers.get(controllerIndex);
+            String c = controller.getName();
+
+            if (!configuredController(controller.getName())) {
+                breakLoop = true;
+                mainForm.restoreWindow(true);
+                mainForm.setStatus("This controller is not configured so click this. =>");
+                break;
+            }
 
             // Polls the controller and checks if it has been unplugged.
             if (!controller.poll()) {
+                breakLoop = true;
+                mainForm.restoreWindow(true);
                 mainForm.setStatus("Controller unplugged!");
-                mainForm.restoreWindow();
                 break;
             }
 
@@ -133,6 +219,10 @@ public class Main {
                 Component component = event.getComponent();
                 float value = event.getValue();
                 Component.Identifier compID = component.getIdentifier();
+
+                if (breakLoop) {
+                    break;
+                }
 
                 if (component.isAnalog()) { // Analog sticks
                     float fX, fY;
@@ -212,24 +302,24 @@ public class Main {
                         // Desktop mode
 
                         try {
-                            if (pref.get("default","mouse_leftclick").equals(String.valueOf(compID))) { // Left Click
+                            if (pref.get(c,"mouse_leftclick").equals(String.valueOf(compID))) { // Left Click
                                 if (value == 1.0f) {mainForm.pressLeftMouseBtn();} else {mainForm.releaseLeftMouseBtn();}
-                            } else if (pref.get("default","mouse_rightclick").equals(String.valueOf(compID))) { // Right Click
+                            } else if (pref.get(c,"mouse_rightclick").equals(String.valueOf(compID))) { // Right Click
                                 if (value == 1.0f) {mainForm.pressRightMouseBtn();} else {mainForm.releaseRightMouseBtn();}
-                            } else if (pref.get("default","mouse_middleclick").equals(String.valueOf(compID))) { // Middle Click
+                            } else if (pref.get(c,"mouse_middleclick").equals(String.valueOf(compID))) { // Middle Click
                                 if (value == 1.0f) {mainForm.pressMiddleMouseBtn();} else {mainForm.releaseMiddleMouseBtn();}
-                            } else if (pref.get("default","key_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
+                            } else if (pref.get(c,"key_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
                                 mainForm.pressEnter();
-                            } else if (pref.get("default","key_windows").equals(String.valueOf(compID))) { // Windows
+                            } else if (pref.get(c,"key_windows").equals(String.valueOf(compID))) { // Windows
                                 if (value == 1.0f) {mainForm.pressWinKey();} else {mainForm.releaseWinKey();}
-                            } else if (pref.get("default","key_esc").equals(String.valueOf(compID)) && value == 1.0f) { // Escape
+                            } else if (pref.get(c,"key_esc").equals(String.valueOf(compID)) && value == 1.0f) { // Escape
                                 mainForm.pressEscape();
-                            } else if (pref.get("default","key_alttab").equals(String.valueOf(compID))) { // Alt + Tab
+                            } else if (pref.get(c,"key_alttab").equals(String.valueOf(compID))) { // Alt + Tab
                                 if (value == 1.0f) {mainForm.pressAltTab();} else {mainForm.releaseAltTab();}
-                            } else if (pref.get("default","key_altf4").equals(String.valueOf(compID)) && value == 1.0f) { // Alt + F4
+                            } else if (pref.get(c,"key_altf4").equals(String.valueOf(compID)) && value == 1.0f) { // Alt + F4
                                 mainForm.pressAltF4();
-                            } else if (pref.get("default","gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Show
-                                mainForm.restoreWindow();
+                            } else if (pref.get(c,"gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Show
+                                mainForm.restoreWindow(false);
                             }
                         } catch (Exception e) {
                             e.printStackTrace();
@@ -240,25 +330,25 @@ public class Main {
                         // GameBoard mode
 
                         try {
-                            if (pref.get("default","gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Hide
+                            if (pref.get(c,"gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Hide
                                 mainForm.minimizeWindow();
-                            } else if (pref.get("default","gb_confirm").equals(String.valueOf(compID)) && value == 1.0f) { // Confirm
+                            } else if (pref.get(c,"gb_confirm").equals(String.valueOf(compID)) && value == 1.0f) { // Confirm
                                 mainForm.pressButton();
-                            } else if (pref.get("default","gb_remove").equals(String.valueOf(compID)) && value == 1.0f) { // Remove
+                            } else if (pref.get(c,"gb_remove").equals(String.valueOf(compID)) && value == 1.0f) { // Remove
                                 mainForm.pressBackspace(false);
-                            } else if (pref.get("default","gb_removecont").equals(String.valueOf(compID))) { // Remove Cont.
+                            } else if (pref.get(c,"gb_removecont").equals(String.valueOf(compID))) { // Remove Cont.
                                 if (value == 1.0f) {mainForm.pressBackspace(true);} else {mainForm.pressBackspace(false);}
-                            } else if (pref.get("default","gb_changecase").equals(String.valueOf(compID)) && value == 1.0f) { // Change Case
+                            } else if (pref.get(c,"gb_changecase").equals(String.valueOf(compID)) && value == 1.0f) { // Change Case
                                 mainForm.pressShift();
-                            } else if (pref.get("default","gb_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
+                            } else if (pref.get(c,"gb_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
                                 mainForm.pressEnter();
-                            } else if (pref.get("default","gb_left").equals(String.valueOf(compID)) && value == 1.0f) { // Left
+                            } else if (pref.get(c,"gb_left").equals(String.valueOf(compID)) && value == 1.0f) { // Left
                                 if (!prevDir.equals("left")) {
                                     mainForm.releaseArrowKey();
                                     prevDir = "left";
                                 }
                                 mainForm.pressLeft();
-                            } else if (pref.get("default","gb_right").equals(String.valueOf(compID)) && value == 1.0f) { // Right
+                            } else if (pref.get(c,"gb_right").equals(String.valueOf(compID)) && value == 1.0f) { // Right
                                 if (!prevDir.equals("right")) {
                                     mainForm.releaseArrowKey();
                                     prevDir = "right";
@@ -294,7 +384,9 @@ public class Main {
             e.printStackTrace();
         }
 
-        searchControllers();
+        if (!breakLoop) {
+            searchControllers();
+        }
 
     }
 

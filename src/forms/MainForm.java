@@ -72,8 +72,8 @@ public class MainForm extends JFrame {
     private JButton btnShift;
     private JButton btnEnter;
     private JComboBox controllerList;
-    private JButton configure;
-    private JButton about;
+    public JButton configure;
+    public JButton about;
 
     private int curShift = 0;
     private String[] curKeyMap = new String[] {
@@ -118,15 +118,15 @@ public class MainForm extends JFrame {
             e.printStackTrace();
         }
 
-        about.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                try {
-                    Desktop.getDesktop().browse(new URL("http://coffeecone.com/gameboard").toURI());
-                    minimizeWindow();
-                } catch (Exception ignored) {}
-            }
-        });
+//        about.addActionListener(new ActionListener() {
+//            @Override
+//            public void actionPerformed(ActionEvent e) {
+////                try {
+////                    Desktop.getDesktop().browse(new URL("http://coffeecone.com/gameboard").toURI());
+////                    minimizeWindow();
+////                } catch (Exception ignored) {}
+//            }
+//        });
     }
 
     public void populateButtons(int type) {
@@ -228,22 +228,30 @@ public class MainForm extends JFrame {
         }
     }
 
-    public void restoreWindow() {
-        Point mouseLoc = MouseInfo.getPointerInfo().getLocation();
+    public void restoreWindow(Boolean center) {
         Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension windowDim = getSize();
-        Double x = mouseLoc.getX();
-        Double y = mouseLoc.getY();
         Point windowLoc = new Point();
+        Double x;
+        Double y;
 
-        if ((mouseLoc.getX()+windowDim.getWidth()) >= screenDim.getWidth()) {
-            x = (screenDim.getWidth()-windowDim.getWidth());
-        }
-        if ((mouseLoc.getY()+windowDim.getHeight()) >= screenDim.getHeight()) {
-            y = (screenDim.getHeight()-windowDim.getHeight());
-        }
-        windowLoc.setLocation(x, y);
+        if (center) {
+            x = (screenDim.getWidth()-windowDim.getWidth())/2;
+            y = (screenDim.getHeight()-windowDim.getHeight())/2;
+            windowLoc.setLocation(x, y);
+        } else {
+            Point mouseLoc = MouseInfo.getPointerInfo().getLocation();
+            x = mouseLoc.getX();
+            y = mouseLoc.getY();
 
+            if ((mouseLoc.getX()+windowDim.getWidth()) >= screenDim.getWidth()) {
+                x = (screenDim.getWidth()-windowDim.getWidth());
+            }
+            if ((mouseLoc.getY()+windowDim.getHeight()) >= screenDim.getHeight()) {
+                y = (screenDim.getHeight()-windowDim.getHeight());
+            }
+            windowLoc.setLocation(x, y);
+        }
         setLocation(windowLoc);
         setState(Frame.NORMAL);
     }
