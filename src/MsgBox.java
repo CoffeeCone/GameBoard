@@ -2,7 +2,7 @@ import javax.swing.JOptionPane;
 import java.awt.*;
 
 public class MsgBox{
-    private static Component parentWindow = Main.mainForm;
+    private static Component parentWindow = Main.w;
 
     public static void info(String msg, String title)
     {

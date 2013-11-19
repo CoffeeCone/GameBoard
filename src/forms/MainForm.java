@@ -219,7 +219,7 @@ public class MainForm extends JFrame {
         }
     }
 
-    public void restoreWindow(Boolean center) {
+    public void restore(Boolean center) {
         Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension windowDim = getSize();
         Point windowLoc = new Point();
@@ -247,7 +247,7 @@ public class MainForm extends JFrame {
         setState(Frame.NORMAL);
     }
 
-    public void minimizeWindow() {
+    public void minimize() {
         setState(Frame.ICONIFIED);
     }
 
@@ -576,7 +576,7 @@ public class MainForm extends JFrame {
 
     }
 
-    public void setStatus(String message) {
+    public void status(String message) {
         status.setText("Status: " + message);
     }
 
@@ -588,8 +588,32 @@ public class MainForm extends JFrame {
         controllerList.addItem(controller);
     }
 
-    public int getController() {
+    public int getConID() {
         return controllerList.getSelectedIndex();
+    }
+
+    public void enableList(boolean bool) {
+        controllerList.setEnabled(bool);
+    }
+
+    public void enableConf(boolean bool) {
+        configure.setEnabled(bool);
+    }
+
+    public void confIsCancel(boolean bool) {
+        if (bool) {
+            configure.setText("Cancel");
+        } else {
+            configure.setText("Configure");
+        }
+    }
+
+    public boolean isConfCancel() {
+        if (configure.getText().equals("Configure")) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
 }

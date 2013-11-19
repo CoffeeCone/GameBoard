@@ -29,11 +29,31 @@ import java.util.TimerTask;
 public class Main {
     public static String version = "1.0";
 
-    public final static MainForm mainForm = new MainForm();
+    public final static String[] keyBinds = {
+            "mouse_leftclick", // 0
+            "mouse_rightclick", // 1
+            "mouse_middleclick", // 2
+            "key_enter", // 3
+            "key_windows", // 4
+            "key_esc", // 5
+            "key_alttab", // 6
+            "key_altf4", // 7
+            "gb_showhide", // 8
+            "gb_confirm", // 9
+            "gb_remove", // 10
+            "gb_removecont", // 11
+            "gb_space", // 12
+            "gb_changecase", // 13
+            "gb_enter", // 14
+            "gb_left", // 15
+            "gb_right" // 16
+    };
+
+    public final static MainForm w = new MainForm();
     private static ArrayList<Controller> foundControllers;
     private static File filePref = new File("GameBoard.ini");
     private static Ini pref = new Ini();
-    private static Boolean comboStop = true;
+    private static boolean comboStop = false;
 
     private static Boolean beingConfigured = false;
     private static int counter = 0;
@@ -42,13 +62,15 @@ public class Main {
     private static String curCon = "";
     private static boolean ignoreBtn = false;
 
+    private static boolean isLooping = false;
+
     public static void main(String[] args) {
-        mainForm.setStatus("Loading settings...");
+        w.status("Loading settings...");
 
         // Check if preference file exists.
         if (!filePref.exists()) {
-            mainForm.restoreWindow(true);
-            mainForm.setStatus("Preference file can't be found.");
+            w.restore(true);
+            w.status("Preference file can't be found.");
             System.out.println("error");
             MsgBox.error("Can't find the preference file. Please re-download at http://coffeecone.com/gameboard to fix the issue.", "Error");
         }
@@ -57,39 +79,39 @@ public class Main {
         try {
             pref.load(filePref);
             if (!pref.get("about","version").equals(version)) {
-                mainForm.setStatus("Preference file mismatch.");
+                w.status("Preference file mismatch.");
                 MsgBox.error("You are using a mismatched preference file.", "Error");
             }
         } catch (IOException ioe) {
             MsgBox.error(ioe.getMessage(),"Error");
         }
 
-        mainForm.about.addActionListener(new ActionListener() {
+        w.about.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 MsgBox.info("GameBoard v" + version + "\n\nAn open-source on-screen keyboard for gamepads.\nVisit http://coffeecone.com/gameboard for more information.\n\nCopyright (c) 2013+ Shedo Surashu (CoffeeCone.com)", "About");
             }
         });
 
-        mainForm.configure.addActionListener(new ActionListener() {
+        w.configure.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (mainForm.configure.getText().equals("Cancel")) {
+                if (w.isConfCancel()) {
                     if (MsgBox.question("Your changes will be lost the next time you open GameBoard. Continue?", "Cancel Changes")) {
                         doneConfigure();
-                        mainForm.setStatus("Idle.");
+                        w.status("Idle.");
                     }
                 } else {
                     if (MsgBox.question("Would you like to configure this controller?", "Configure")) {
                         beingConfigured = true;
-                        mainForm.controllerList.setEnabled(false);
-                        mainForm.configure.setEnabled(false);
-                        mainForm.configure.setText("Cancel");
+                        w.enableList(false);
+                        w.enableConf(false);
+                        w.confIsCancel(true);
                         assignPrompt("mouse_leftclick");
                         new Timer().schedule(new TimerTask() {
                             @Override
                             public void run() {
-                                mainForm.configure.setEnabled(true);
+                                w.enableConf(true);
                                 startController();
                             }
                         }, 250);
@@ -98,33 +120,29 @@ public class Main {
             }
         });
 
-        mainForm.controllerList.addActionListener(new ActionListener() {
+        w.controllerList.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!comboStop) {
-                    if (configuredController(mainForm.controllerList.getSelectedItem().toString())) {
-                        if (pref.get("about","lastused") != null && !pref.get("about","lastused").equals("")) {
-                            mainForm.controllerList.setSelectedItem(pref.get("about","lastused"));
-                        } else {
-                            pref.put("about","lastused",mainForm.controllerList.getSelectedItem().toString());
+                    curCon = w.controllerList.getSelectedItem().toString();
+                    pref.put("about","lastused",curCon);
+                    savePrefs();
+                    if (configuredController(curCon)) {
+                        if (!isLooping) {
+                            new Timer().schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    startController();
+                                }
+                            }, 250);
                         }
-                        try {
-                            pref.store();
-                        } catch (IOException ignored) {}
-                        mainForm.setStatus("Ready.");
-                        new Timer().schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                startController();
-                            }
-                        }, 250);
                     }
                 }
             }
         });
         comboStop = false;
 
-        mainForm.minimizeWindow();
+        w.minimize();
 
         foundControllers = new ArrayList<Controller>();
         searchControllers();
@@ -134,61 +152,44 @@ public class Main {
     private static void searchControllers() {
         Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
 
-        mainForm.setStatus("Searching for available controllers...");
+        w.status("Searching for available controllers...");
 
         comboStop = true;
 
         foundControllers.clear();
-        mainForm.clearControllers();
+        w.clearControllers();
 
         for (Controller controller : controllers) {
             if (controller.getType() == Controller.Type.STICK ||
                     controller.getType() == Controller.Type.GAMEPAD) {
                 if (!pref.containsKey(controller.getName())) {
-                    pref.put(controller.getName(),"mouse_leftclick","");
-                    pref.put(controller.getName(),"mouse_rightclick","");
-                    pref.put(controller.getName(),"mouse_middleclick","");
-                    pref.put(controller.getName(),"key_enter","");
-                    pref.put(controller.getName(),"key_windows","");
-                    pref.put(controller.getName(),"key_esc","");
-                    pref.put(controller.getName(),"key_alttab","");
-                    pref.put(controller.getName(),"key_altf4","");
-                    pref.put(controller.getName(),"gb_showhide","");
-                    pref.put(controller.getName(),"gb_confirm","");
-                    pref.put(controller.getName(),"gb_remove","");
-                    pref.put(controller.getName(),"gb_removecont","");
-                    pref.put(controller.getName(),"gb_space","");
-                    pref.put(controller.getName(),"gb_changecase","");
-                    pref.put(controller.getName(),"gb_enter","");
-                    pref.put(controller.getName(),"gb_left","");
-                    pref.put(controller.getName(),"gb_right","");
+                    for (String keyBind : keyBinds) {
+                        pref.put(controller.getName(), keyBind, "");
+                    }
                 }
 
                 foundControllers.add(controller);
-                mainForm.addController(controller.getName());
+                w.addController(controller.getName());
             }
         }
-        mainForm.setStatus("Controllers loaded.");
+        w.status("Controllers loaded.");
 
         if (pref.get("about","lastused") != null && !pref.get("about","lastused").equals("")) {
-            mainForm.controllerList.setSelectedItem(pref.get("about", "lastused"));
+            w.controllerList.setSelectedItem(pref.get("about", "lastused"));
         } else {
-            pref.put("about","lastused",mainForm.controllerList.getSelectedItem().toString());
+            pref.put("about", "lastused", w.controllerList.getSelectedItem().toString());
         }
 
-        try {
-            pref.store(filePref);
-        } catch (IOException ioe) {
-            MsgBox.error(ioe.getMessage(),"Error");
-        }
+        System.out.println("debug1");
+        savePrefs();
 
         if (foundControllers.isEmpty()) {
-            mainForm.configure.setEnabled(false);
-            mainForm.setStatus("No controller found.");
+            curCon = "";
+            w.enableConf(false);
+            w.status("No controller found.");
         } else {
-            mainForm.configure.setEnabled(true);
-
-            mainForm.setStatus("Done.");
+            w.enableConf(true);
+            w.status("Done.");
         }
 
         comboStop = false;
@@ -199,40 +200,10 @@ public class Main {
     private static boolean configuredController(String c)  {
         boolean isConfigured = false;
 
-        if (pref.get(c,"mouse_leftclick") != null && !pref.get(c,"mouse_leftclick").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"mouse_rightclick") != null && !pref.get(c,"mouse_rightclick").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"mouse_middleclick") != null && !pref.get(c,"mouse_middleclick").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"key_enter") != null && !pref.get(c,"key_enter").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"key_windows") != null && !pref.get(c,"key_windows").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"key_esc") != null && !pref.get(c,"key_esc").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"key_alttab") != null && !pref.get(c,"key_alttab").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"key_altf4") != null && !pref.get(c,"key_altf4").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_showhide") != null && !pref.get(c,"gb_showhide").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_confirm") != null && !pref.get(c,"gb_confirm").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_remove") != null && !pref.get(c,"gb_remove").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_removecont") != null && !pref.get(c,"gb_removecont").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_space") != null && !pref.get(c,"gb_space").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_changecase") != null && !pref.get(c,"gb_changecase").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_enter") != null && !pref.get(c,"gb_enter").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_left") != null && !pref.get(c,"gb_left").equals("")) {
-            isConfigured = true;
-        } else if (pref.get(c,"gb_right") != null && !pref.get(c,"gb_right").equals("")) {
-            isConfigured = true;
+        for (String keyBind : keyBinds) {
+            if (pref.get(c,keyBind) != null && !pref.get(c,keyBind).equals("")) {
+                isConfigured = true;
+            }
         }
 
         return isConfigured;
@@ -242,19 +213,21 @@ public class Main {
         String prevDir = "center";
         Boolean breakLoop = false;
 
+        System.out.println("Loop started.");
+
         while (true) {
 
+            isLooping = true;
+
             // Get the selected item index on combolist.
-            int controllerIndex = mainForm.getController();
-            Controller controller = foundControllers.get(controllerIndex);
-            String c = controller.getName();
-            curCon = c;
+            Controller controller = foundControllers.get(w.getConID());
+            String c = curCon;
 
             if (!beingConfigured) {
                 if (!configuredController(controller.getName())) {
                     breakLoop = true;
-                    mainForm.restoreWindow(true);
-                    mainForm.setStatus("This controller is not configured so click this. =>");
+                    w.restore(true);
+                    w.status("This controller is not configured so click this. =>");
                     break;
                 }
             }
@@ -262,9 +235,9 @@ public class Main {
             // Polls the controller and checks if it has been unplugged.
             if (!controller.poll()) {
                 breakLoop = true;
-                mainForm.restoreWindow(true);
-                mainForm.setStatus("Controller unplugged!");
-                mainForm.controllerList.setEnabled(true);
+                w.restore(true);
+                w.status("Controller unplugged!");
+                w.enableList(true);
                 doneConfigure();
                 new Timer().schedule(new TimerTask() {
                     @Override
@@ -292,7 +265,7 @@ public class Main {
                        float fX, fY;
                        int x, y;
 
-                       mainForm.minimizeWindow();
+                       w.minimize();
 
                        if (compID == Component.Identifier.Axis.X || compID == Component.Identifier.Axis.Y) {
 
@@ -300,16 +273,16 @@ public class Main {
                                fX = component.getPollData();
                                fX = fX * 10.0f;
                                x = Math.round(fX);
-                               mainForm.mouseX = x;
-                               mainForm.mouseSetX(x);
+                               w.mouseX = x;
+                               w.mouseSetX(x);
                            }
 
                            if (compID == Component.Identifier.Axis.Y) {
                                fY = component.getPollData();
                                fY = fY * 10.0f;
                                y = Math.round(fY);
-                               mainForm.mouseY = y;
-                               mainForm.mouseSetY(y);
+                               w.mouseY = y;
+                               w.mouseSetY(y);
                            }
 
                        }
@@ -320,44 +293,44 @@ public class Main {
 
                         showTyping();
 
-                        if (mainForm.getState() == Frame.NORMAL) {
+                        if (w.getState() == Frame.NORMAL) {
                             if (Float.compare(value, Component.POV.UP) == 0) {
-                                mainForm.selectButton("up");
+                                w.selectButton("up");
                             } else if (Float.compare(value, Component.POV.DOWN) == 0) {
-                                mainForm.selectButton("down");
+                                w.selectButton("down");
                             } else if (Float.compare(value, Component.POV.LEFT) == 0) {
-                                mainForm.selectButton("left");
+                                w.selectButton("left");
                             } else if (Float.compare(value, Component.POV.RIGHT) == 0) {
-                                mainForm.selectButton("right");
+                                w.selectButton("right");
                             }
-                        } else if (mainForm.getState() == Frame.ICONIFIED) {
+                        } else if (w.getState() == Frame.ICONIFIED) {
                             if (Float.compare(value, Component.POV.UP) == 0) {
                                 if (!prevDir.equals("up")) {
-                                    mainForm.releaseArrowKey();
+                                    w.releaseArrowKey();
                                     prevDir = "up";
                                 }
-                                mainForm.pressUp();
+                                w.pressUp();
                             } else if (Float.compare(value, Component.POV.DOWN) == 0) {
                                 if (!prevDir.equals("down")) {
-                                    mainForm.releaseArrowKey();
+                                    w.releaseArrowKey();
                                     prevDir = "down";
                                 }
-                                mainForm.pressDown();
+                                w.pressDown();
                             } else if (Float.compare(value, Component.POV.LEFT) == 0) {
                                 if (!prevDir.equals("left")) {
-                                    mainForm.releaseArrowKey();
+                                    w.releaseArrowKey();
                                     prevDir = "left";
                                 }
-                                mainForm.pressLeft();
+                                w.pressLeft();
                             } else if (Float.compare(value, Component.POV.RIGHT) == 0) {
                                 if (!prevDir.equals("right")) {
-                                    mainForm.releaseArrowKey();
+                                    w.releaseArrowKey();
                                     prevDir = "right";
                                 }
-                                mainForm.pressRight();
+                                w.pressRight();
                             } else {
                                 prevDir = "center";
-                                mainForm.releaseArrowKey();
+                                w.releaseArrowKey();
                             }
                         }
                     }
@@ -370,13 +343,10 @@ public class Main {
 
                         if (counter > 16) {
                             counter = 0;
-                            try {
-                                pref.store(filePref);
-                            } catch (IOException e) {
-                                MsgBox.error(e.getMessage(), "Error");
-                            }
+                            System.out.println("debug2");
+                            savePrefs();
                             beingConfigured = false;
-                            mainForm.setStatus("Ready.");
+                            w.status("Ready.");
                             doneConfigure();
                         } else {
 
@@ -395,68 +365,80 @@ public class Main {
                     } else if (!beingConfigured) {
 
                         prevDir = "center";
-                        mainForm.releaseArrowKey();
+                        w.releaseArrowKey();
 
-                        if (mainForm.getState() == Frame.ICONIFIED) {
+                        if (w.getState() == Frame.ICONIFIED) {
 
                             // Desktop mode
 
                             try {
-                                if (pref.get(c,"mouse_leftclick").equals(String.valueOf(compID))) { // Left Click
-                                    if (value == 1.0f) {mainForm.pressLeftMouseBtn();} else {mainForm.releaseLeftMouseBtn();}
-                                } else if (pref.get(c,"mouse_rightclick").equals(String.valueOf(compID))) { // Right Click
-                                    if (value == 1.0f) {mainForm.pressRightMouseBtn();} else {mainForm.releaseRightMouseBtn();}
-                                } else if (pref.get(c,"mouse_middleclick").equals(String.valueOf(compID))) { // Middle Click
-                                    if (value == 1.0f) {mainForm.pressMiddleMouseBtn();} else {mainForm.releaseMiddleMouseBtn();}
-                                } else if (pref.get(c,"key_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
-                                    mainForm.pressEnter();
-                                } else if (pref.get(c,"key_windows").equals(String.valueOf(compID))) { // Windows
-                                    if (value == 1.0f) {mainForm.pressWinKey();} else {mainForm.releaseWinKey();}
-                                } else if (pref.get(c,"key_esc").equals(String.valueOf(compID)) && value == 1.0f) { // Escape
-                                    mainForm.pressEscape();
-                                } else if (pref.get(c,"key_alttab").equals(String.valueOf(compID))) { // Alt + Tab
-                                    if (value == 1.0f) {mainForm.pressAltTab();} else {mainForm.releaseAltTab();}
-                                } else if (pref.get(c,"key_altf4").equals(String.valueOf(compID)) && value == 1.0f) { // Alt + F4
-                                    mainForm.pressAltF4();
-                                } else if (pref.get(c,"gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Show
-                                    mainForm.restoreWindow(false);
+                                if (pref.get(c,keyBinds[0]).equals(String.valueOf(compID))) { // Left Click
+                                    if (value == 1.0f) {
+                                        w.pressLeftMouseBtn();} else {
+                                        w.releaseLeftMouseBtn();}
+                                } else if (pref.get(c,keyBinds[1]).equals(String.valueOf(compID))) { // Right Click
+                                    if (value == 1.0f) {
+                                        w.pressRightMouseBtn();} else {
+                                        w.releaseRightMouseBtn();}
+                                } else if (pref.get(c,keyBinds[2]).equals(String.valueOf(compID))) { // Middle Click
+                                    if (value == 1.0f) {
+                                        w.pressMiddleMouseBtn();} else {
+                                        w.releaseMiddleMouseBtn();}
+                                } else if (pref.get(c,keyBinds[3]).equals(String.valueOf(compID)) && value == 1.0f) { // Enter
+                                    w.pressEnter();
+                                } else if (pref.get(c,keyBinds[4]).equals(String.valueOf(compID))) { // Windows
+                                    if (value == 1.0f) {
+                                        w.pressWinKey();} else {
+                                        w.releaseWinKey();}
+                                } else if (pref.get(c,keyBinds[5]).equals(String.valueOf(compID)) && value == 1.0f) { // Escape
+                                    w.pressEscape();
+                                } else if (pref.get(c,keyBinds[6]).equals(String.valueOf(compID))) { // Alt + Tab
+                                    if (value == 1.0f) {
+                                        w.pressAltTab();} else {
+                                        w.releaseAltTab();}
+                                } else if (pref.get(c,keyBinds[7]).equals(String.valueOf(compID)) && value == 1.0f) { // Alt + F4
+                                    w.pressAltF4();
+                                } else if (pref.get(c,keyBinds[8]).equals(String.valueOf(compID)) && value == 1.0f) { // Show
+                                    w.restore(false);
                                 }
                             } catch (Exception e) {
                                 MsgBox.error(e.getMessage(),"Execution Error");
                             }
 
-                        } else if (mainForm.getState() == Frame.NORMAL) {
+                        } else if (w.getState() == Frame.NORMAL) {
 
-                            // GameBoard mode
+                            // Keyboard mode
 
                             try {
-                                if (pref.get(c,"gb_showhide").equals(String.valueOf(compID)) && value == 1.0f) { // Hide
-                                    mainForm.minimizeWindow();
-                                } else if (pref.get(c,"gb_confirm").equals(String.valueOf(compID)) && value == 1.0f) { // Confirm
+                                if (pref.get(c,keyBinds[8]).equals(String.valueOf(compID)) && value == 1.0f) { // Hide
+                                    w.minimize();
+                                } else if (pref.get(c,keyBinds[9]).equals(String.valueOf(compID)) && value == 1.0f) { // Confirm
                                     showTyping();
-                                    mainForm.pressButton();
-                                } else if (pref.get(c,"gb_remove").equals(String.valueOf(compID)) && value == 1.0f) { // Remove
-                                    mainForm.pressBackspace(false);
-                                } else if (pref.get(c,"gb_removecont").equals(String.valueOf(compID))) { // Remove Cont.
-                                    if (value == 1.0f) {mainForm.pressBackspace(true);} else {mainForm.pressBackspace(false);}
-                                } else if (pref.get(c,"gb_space").equals(String.valueOf(compID)) && value == 1.0f) { // Remove
-                                    mainForm.pressSpace();
-                                } else if (pref.get(c,"gb_changecase").equals(String.valueOf(compID)) && value == 1.0f) { // Change Case
-                                    mainForm.pressShift();
-                                } else if (pref.get(c,"gb_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
-                                    mainForm.pressEnter();
-                                } else if (pref.get(c,"gb_left").equals(String.valueOf(compID)) && value == 1.0f) { // Left
+                                    w.pressButton();
+                                } else if (pref.get(c,keyBinds[10]).equals(String.valueOf(compID)) && value == 1.0f) { // Remove
+                                    w.pressBackspace(false);
+                                } else if (pref.get(c,keyBinds[11]).equals(String.valueOf(compID))) { // Remove Cont.
+                                    if (value == 1.0f) {
+                                        w.pressBackspace(true);} else {
+                                        w.pressBackspace(false);}
+                                } else if (pref.get(c,keyBinds[12]).equals(String.valueOf(compID)) && value == 1.0f) { // Remove
+                                    w.pressSpace();
+                                } else if (pref.get(c,keyBinds[13]).equals(String.valueOf(compID)) && value == 1.0f) { // Change Case
+                                    w.pressShift();
+                                } else if (pref.get(c,keyBinds[14]).equals(String.valueOf(compID)) && value == 1.0f) { // Enter
+                                    w.pressEnter();
+                                } else if (pref.get(c,keyBinds[15]).equals(String.valueOf(compID)) && value == 1.0f) { // Left
                                     if (!prevDir.equals("left")) {
-                                        mainForm.releaseArrowKey();
+                                        w.releaseArrowKey();
                                         prevDir = "left";
                                     }
-                                    mainForm.pressLeft();
-                                } else if (pref.get(c,"gb_right").equals(String.valueOf(compID)) && value == 1.0f) { // Right
+                                    w.pressLeft();
+                                } else if (pref.get(c,keyBinds[16]).equals(String.valueOf(compID)) && value == 1.0f) { // Right
                                     if (!prevDir.equals("right")) {
-                                        mainForm.releaseArrowKey();
+                                        w.releaseArrowKey();
                                         prevDir = "right";
                                     }
-                                    mainForm.pressRight();
+                                    w.pressRight();
                                 }
                             } catch (Exception e) {
                                 MsgBox.error(e.getMessage(), "Execution Error");
@@ -475,6 +457,9 @@ public class Main {
             }
 
         }
+
+        isLooping = false;
+        System.out.println("Stopped looping.");
 
         if (!breakLoop && !beingConfigured) {
             forceResetControllers();
@@ -499,28 +484,27 @@ public class Main {
     }
 
     public static void showTyping() {
-        mainForm.setStatus("Typing...");
+        w.status("Typing...");
         new Timer().schedule(new TimerTask() {
             @Override
             public void run() {
-                mainForm.setStatus("Idle.");
+                w.status("Idle.");
             }
-        }, 250);
+        }, 150);
     }
 
     public static void assignPrompt(String t) {
-        mainForm.setStatus("Assign a button for \""+t+"\"...");
+        w.status("Assign a button for \"" + t + "\"...");
     }
 
     public static void doneConfigure() {
         counter = 0;
         curConf = "mouse_leftclick";
         curBtn = "";
-        curCon = "";
         ignoreBtn = false;
         beingConfigured = false;
-        mainForm.controllerList.setEnabled(true);
-        mainForm.configure.setText("Configure");
+        w.enableList(true);
+        w.confIsCancel(false);
     }
 
     public static void configureIncrement() {
@@ -535,37 +519,29 @@ public class Main {
             }
 
             counter++;
-
-            switch (counter) {
-                case 0: curConf = "mouse_leftclick"; break;
-                case 1: curConf = "mouse_rightclick"; break;
-                case 2: curConf = "mouse_middleclick"; break;
-                case 3: curConf = "key_enter"; break;
-                case 4: curConf = "key_windows"; break;
-                case 5: curConf = "key_esc"; break;
-                case 6: curConf = "key_alttab"; break;
-                case 7: curConf = "key_altf4"; break;
-                case 8: curConf = "gb_showhide"; break;
-                case 9: curConf = "gb_confirm"; break;
-                case 10: curConf = "gb_remove"; break;
-                case 11: curConf = "gb_removecont"; break;
-                case 12: curConf = "gb_space"; break;
-                case 13: curConf = "gb_changecase"; break;
-                case 14: curConf = "gb_enter"; break;
-                case 15: curConf = "gb_left"; break;
-                case 16: curConf = "gb_right"; break;
+            if (counter < keyBinds.length) {
+                curConf = keyBinds[counter];
             }
 
         }
 
         ignoreBtn = false;
 
-        //System.out.println(counter);
-        if (counter <= 16) {
+        if (counter < keyBinds.length) {
             assignPrompt(curConf);
         } else {
-            mainForm.setStatus("Done! Press any button to continue.");
+            w.status("Done! Press any button to continue.");
         }
     }
+
+    private static void savePrefs() {
+        try {
+            pref.store(filePref);
+        } catch (IOException e) {
+            e.printStackTrace();
+            MsgBox.error(e.getMessage(), "File Write Error");
+        }
+    }
+
 
 }
