@@ -27,8 +27,9 @@ import java.util.TimerTask;
  */
 
 public class Main {
-    public static String version = "1.0";
+    public static String version = "1.1";
 
+    // Define all available key binds.
     public final static String[] keyBinds = {
             "mouse_leftclick", // 0
             "mouse_rightclick", // 1
@@ -50,12 +51,13 @@ public class Main {
     };
 
     public final static MainForm w = new MainForm();
+
     private static ArrayList<Controller> foundControllers;
     private static File filePref = new File("GameBoard.ini");
     private static Ini pref = new Ini();
     private static boolean comboStop = false;
 
-    private static Boolean beingConfigured = false;
+    private static boolean beingConfigured = false;
     private static int counter = 0;
     private static String curConf = "mouse_leftclick";
     private static String curBtn = "";
@@ -108,13 +110,15 @@ public class Main {
                         w.enableConf(false);
                         w.confIsCancel(true);
                         assignPrompt("mouse_leftclick");
-                        new Timer().schedule(new TimerTask() {
-                            @Override
-                            public void run() {
-                                w.enableConf(true);
-                                startController();
-                            }
-                        }, 250);
+                        if (!isLooping) {
+                            new Timer().schedule(new TimerTask() {
+                                @Override
+                                public void run() {
+                                    w.enableConf(true);
+                                    startController();
+                                }
+                            }, 250);
+                        }
                     }
                 }
             }
@@ -124,10 +128,11 @@ public class Main {
             @Override
             public void actionPerformed(ActionEvent e) {
                 if (!comboStop) {
-                    curCon = w.controllerList.getSelectedItem().toString();
-                    pref.put("about","lastused",curCon);
+                    curCon = w.getCon();
+                    pref.put("about", "lastused", curCon);
                     savePrefs();
                     if (configuredController(curCon)) {
+                        w.status("Ready.");
                         if (!isLooping) {
                             new Timer().schedule(new TimerTask() {
                                 @Override
@@ -162,14 +167,27 @@ public class Main {
         for (Controller controller : controllers) {
             if (controller.getType() == Controller.Type.STICK ||
                     controller.getType() == Controller.Type.GAMEPAD) {
-                if (!pref.containsKey(controller.getName())) {
-                    for (String keyBind : keyBinds) {
-                        pref.put(controller.getName(), keyBind, "");
+
+                Component[] components = controller.getComponents();
+                int compCheck = 0;
+                for (Component component : components) {
+                    if (component.getIdentifier().toString().equals("pov") ||
+                            component.getIdentifier().toString().equals("x") ||
+                            component.getIdentifier().toString().equals("y")) {
+                        compCheck++;
                     }
                 }
 
-                foundControllers.add(controller);
-                w.addController(controller.getName());
+                if (compCheck == 3) {
+                    if (!pref.containsKey(controller.getName())) {
+                        for (String keyBind : keyBinds) {
+                            pref.put(controller.getName(), keyBind, "");
+                        }
+                    }
+
+                    foundControllers.add(controller);
+                    w.addController(controller.getName());
+                }
             }
         }
         w.status("Controllers loaded.");
@@ -177,7 +195,7 @@ public class Main {
         if (pref.get("about","lastused") != null && !pref.get("about","lastused").equals("")) {
             w.controllerList.setSelectedItem(pref.get("about", "lastused"));
         } else {
-            pref.put("about", "lastused", w.controllerList.getSelectedItem().toString());
+            pref.put("about", "lastused", w.getCon());
         }
 
         System.out.println("debug1");
@@ -188,6 +206,7 @@ public class Main {
             w.enableConf(false);
             w.status("No controller found.");
         } else {
+            curCon = w.getCon();
             w.enableConf(true);
             w.status("Done.");
         }
@@ -210,8 +229,8 @@ public class Main {
     }
 
     private static void startController() {
-        String prevDir = "center";
-        Boolean breakLoop = false;
+        String hatDir = "center";
+        boolean breakLoop = false;
 
         System.out.println("Loop started.");
 
@@ -305,31 +324,31 @@ public class Main {
                             }
                         } else if (w.getState() == Frame.ICONIFIED) {
                             if (Float.compare(value, Component.POV.UP) == 0) {
-                                if (!prevDir.equals("up")) {
+                                if (!hatDir.equals("up")) {
                                     w.releaseArrowKey();
-                                    prevDir = "up";
+                                    hatDir = "up";
                                 }
                                 w.pressUp();
                             } else if (Float.compare(value, Component.POV.DOWN) == 0) {
-                                if (!prevDir.equals("down")) {
+                                if (!hatDir.equals("down")) {
                                     w.releaseArrowKey();
-                                    prevDir = "down";
+                                    hatDir = "down";
                                 }
                                 w.pressDown();
                             } else if (Float.compare(value, Component.POV.LEFT) == 0) {
-                                if (!prevDir.equals("left")) {
+                                if (!hatDir.equals("left")) {
                                     w.releaseArrowKey();
-                                    prevDir = "left";
+                                    hatDir = "left";
                                 }
                                 w.pressLeft();
                             } else if (Float.compare(value, Component.POV.RIGHT) == 0) {
-                                if (!prevDir.equals("right")) {
+                                if (!hatDir.equals("right")) {
                                     w.releaseArrowKey();
-                                    prevDir = "right";
+                                    hatDir = "right";
                                 }
                                 w.pressRight();
                             } else {
-                                prevDir = "center";
+                                hatDir = "center";
                                 w.releaseArrowKey();
                             }
                         }
@@ -341,15 +360,7 @@ public class Main {
 
                         curBtn = compID.getName();
 
-                        if (counter > 16) {
-                            counter = 0;
-                            System.out.println("debug2");
-                            savePrefs();
-                            beingConfigured = false;
-                            w.status("Ready.");
-                            doneConfigure();
-                        } else {
-
+                        if (counter < keyBinds.length) {
                             if (!ignoreBtn) {
                                 ignoreBtn = true;
                                 new Timer().schedule(new TimerTask() {
@@ -360,11 +371,20 @@ public class Main {
                                 }, 50);
                             }
 
+                        } else {
+
+                            counter = 0;
+                            System.out.println("debug2");
+                            savePrefs();
+                            beingConfigured = false;
+                            w.status("Ready.");
+                            doneConfigure();
+
                         }
 
                     } else if (!beingConfigured) {
 
-                        prevDir = "center";
+                        hatDir = "center";
                         w.releaseArrowKey();
 
                         if (w.getState() == Frame.ICONIFIED) {
@@ -428,15 +448,15 @@ public class Main {
                                 } else if (pref.get(c,keyBinds[14]).equals(String.valueOf(compID)) && value == 1.0f) { // Enter
                                     w.pressEnter();
                                 } else if (pref.get(c,keyBinds[15]).equals(String.valueOf(compID)) && value == 1.0f) { // Left
-                                    if (!prevDir.equals("left")) {
+                                    if (!hatDir.equals("left")) {
                                         w.releaseArrowKey();
-                                        prevDir = "left";
+                                        hatDir = "left";
                                     }
                                     w.pressLeft();
                                 } else if (pref.get(c,keyBinds[16]).equals(String.valueOf(compID)) && value == 1.0f) { // Right
-                                    if (!prevDir.equals("right")) {
+                                    if (!hatDir.equals("right")) {
                                         w.releaseArrowKey();
-                                        prevDir = "right";
+                                        hatDir = "right";
                                     }
                                     w.pressRight();
                                 }

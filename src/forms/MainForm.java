@@ -2,10 +2,7 @@ package forms;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.awt.event.KeyEvent;
-import java.net.URL;
+import java.awt.event.*;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -219,7 +216,7 @@ public class MainForm extends JFrame {
         }
     }
 
-    public void restore(Boolean center) {
+    public void restore(boolean center) {
         Dimension screenDim = Toolkit.getDefaultToolkit().getScreenSize();
         Dimension windowDim = getSize();
         Point windowLoc = new Point();
@@ -245,6 +242,7 @@ public class MainForm extends JFrame {
         }
         setLocation(windowLoc);
         setState(Frame.NORMAL);
+
     }
 
     public void minimize() {
@@ -592,6 +590,10 @@ public class MainForm extends JFrame {
         return controllerList.getSelectedIndex();
     }
 
+    public String getCon() {
+        return controllerList.getSelectedItem().toString();
+    }
+
     public void enableList(boolean bool) {
         controllerList.setEnabled(bool);
     }
@@ -615,5 +617,7 @@ public class MainForm extends JFrame {
             return true;
         }
     }
+
+
 
 }
