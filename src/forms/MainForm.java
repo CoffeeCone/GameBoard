@@ -71,7 +71,7 @@ public class MainForm extends JFrame {
     private JButton btnD12;
     private JButton btnShift;
     private JButton btnEnter;
-    private JComboBox controllerList;
+    public JComboBox controllerList;
     public JButton configure;
     public JButton about;
 

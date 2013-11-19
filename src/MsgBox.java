@@ -9,9 +9,15 @@ public class MsgBox{
         JOptionPane.showMessageDialog(parentWindow, msg, title, JOptionPane.INFORMATION_MESSAGE);
     }
 
-    public static void question(String msg, String title)
+    public static boolean question(String msg, String title)
     {
-        JOptionPane.showMessageDialog(parentWindow, msg, title, JOptionPane.QUESTION_MESSAGE);
+        int response = JOptionPane.showConfirmDialog(parentWindow, msg, title, JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+        return response == JOptionPane.YES_OPTION;
+    }
+
+    public static int option(String msg, String title)
+    {
+        return JOptionPane.showConfirmDialog(parentWindow, msg, title, JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
     }
 
     public static void warning(String msg, String title)

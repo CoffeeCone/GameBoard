@@ -550,6 +550,7 @@
         </constraints>
         <properties>
           <borderPainted value="false"/>
+          <enabled value="false"/>
           <text value="Configure"/>
         </properties>
       </component>
