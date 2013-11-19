@@ -36,6 +36,7 @@ public class Main {
     private static Boolean comboStop = true;
 
     private static Boolean beingConfigured = false;
+    private static int counter = 0;
 
     public static void main(String[] args) {
         mainForm.setStatus("Loading settings...");
@@ -71,9 +72,7 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 if (mainForm.configure.getText().equals("Cancel")) {
                     if (MsgBox.question("Your changes will be lost the next time you open GameBoard. Continue?", "Cancel Changes")) {
-                        beingConfigured = false;
-                        mainForm.controllerList.setEnabled(true);
-                        mainForm.configure.setText("Configure");
+                        doneConfigure();
                         mainForm.setStatus("Idle.");
                     }
                 } else {
@@ -82,7 +81,7 @@ public class Main {
                         mainForm.controllerList.setEnabled(false);
                         mainForm.configure.setEnabled(false);
                         mainForm.configure.setText("Cancel");
-                        mainForm.setStatus("Press a button for \"mouse_leftclick\"...");
+                        assignPrompt("mouse_leftclick");
                         new Timer().schedule(new TimerTask() {
                             @Override
                             public void run() {
@@ -100,6 +99,14 @@ public class Main {
             public void actionPerformed(ActionEvent e) {
                 if (!comboStop) {
                     if (configuredController(mainForm.controllerList.getSelectedItem().toString())) {
+                        if (pref.get("about","lastused") != null && !pref.get("about","lastused").equals("")) {
+                            mainForm.controllerList.setSelectedItem(pref.get("about","lastused"));
+                        } else {
+                            pref.put("about","lastused",mainForm.controllerList.getSelectedItem().toString());
+                        }
+                        try {
+                            pref.store();
+                        } catch (IOException ignored) {}
                         mainForm.setStatus("Ready.");
                         new Timer().schedule(new TimerTask() {
                             @Override
@@ -158,6 +165,13 @@ public class Main {
             }
         }
         mainForm.setStatus("Controllers loaded.");
+
+        if (pref.get("about","lastused") != null && !pref.get("about","lastused").equals("")) {
+            mainForm.controllerList.setSelectedItem(pref.get("about", "lastused"));
+        } else {
+            pref.put("about","lastused",mainForm.controllerList.getSelectedItem().toString());
+        }
+
         try {
             pref.store(filePref);
         } catch (IOException ioe) {
@@ -169,7 +183,8 @@ public class Main {
             mainForm.setStatus("No controller found.");
         } else {
             mainForm.configure.setEnabled(true);
-            mainForm.setStatus("Ready.");
+
+            mainForm.setStatus("Done.");
         }
 
         comboStop = false;
@@ -222,7 +237,6 @@ public class Main {
     private static void startController() {
         String prevDir = "center";
         Boolean breakLoop = false;
-        int config = 0;
         String curConf = "mouse_leftclick";
 
         while (true) {
@@ -247,6 +261,7 @@ public class Main {
                 mainForm.restoreWindow(true);
                 mainForm.setStatus("Controller unplugged!");
                 mainForm.controllerList.setEnabled(true);
+                doneConfigure();
                 break;
             }
 
@@ -341,18 +356,18 @@ public class Main {
 
                     if (beingConfigured && value == 1.0f) {
 
-                        if (config > 16) {
+                        if (counter > 16) {
+                            counter = 0;
                             try {
                                 pref.store(filePref);
                             } catch (IOException e) {
                                 MsgBox.error(e.getMessage(), "Error");
                             }
-                            mainForm.setStatus("You have finished configuring this controller!");
-                            MsgBox.info("Done!", "Configure");
                             beingConfigured = false;
                             mainForm.setStatus("Ready.");
+                            doneConfigure();
                         } else {
-                            int result = MsgBox.option("Are you sure you want to assign button " + String.valueOf(compID) + " to " + curConf + "?\nTo skip this assigning this function, select NO.\nIf you want to change the button, select CANCEL.","Assign Button");
+                            int result = MsgBox.option("Are you sure you want to assign button " + String.valueOf(compID) + " to " + curConf + "?\nTo disable this function, select NO.\nIf you want to change the button, select CANCEL.","Assign Button");
                             if (result < 2) {
 
                                 if (result == 0) {
@@ -361,9 +376,10 @@ public class Main {
                                     pref.put(c,curConf,"");
                                 }
 
-                                config++;
+                                counter++;
 
-                                switch (config) {
+                                switch (counter) {
+                                    case 0: curConf = "mouse_leftclick"; break;
                                     case 1: curConf = "mouse_rightclick"; break;
                                     case 2: curConf = "mouse_middleclick"; break;
                                     case 3: curConf = "key_enter"; break;
@@ -380,12 +396,14 @@ public class Main {
                                     case 14: curConf = "gb_enter"; break;
                                     case 15: curConf = "gb_left"; break;
                                     case 16: curConf = "gb_right"; break;
-                                    case 0:
-                                    default: curConf = "mouse_leftclick"; break;
                                 }
 
-                                mainForm.setStatus("Press a button for \""+curConf+"\"...");
-
+                            }
+                            //System.out.println(counter);
+                            if (counter <= 16) {
+                                assignPrompt(curConf);
+                            } else {
+                                mainForm.setStatus("Done! Press any button to continue.");
                             }
                         }
 
@@ -419,7 +437,7 @@ public class Main {
                                     mainForm.restoreWindow(false);
                                 }
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                MsgBox.error(e.getMessage(),"Execution Error");
                             }
 
                         } else if (mainForm.getState() == Frame.NORMAL) {
@@ -436,6 +454,8 @@ public class Main {
                                     mainForm.pressBackspace(false);
                                 } else if (pref.get(c,"gb_removecont").equals(String.valueOf(compID))) { // Remove Cont.
                                     if (value == 1.0f) {mainForm.pressBackspace(true);} else {mainForm.pressBackspace(false);}
+                                } else if (pref.get(c,"gb_space").equals(String.valueOf(compID)) && value == 1.0f) { // Remove
+                                    mainForm.pressSpace();
                                 } else if (pref.get(c,"gb_changecase").equals(String.valueOf(compID)) && value == 1.0f) { // Change Case
                                     mainForm.pressShift();
                                 } else if (pref.get(c,"gb_enter").equals(String.valueOf(compID)) && value == 1.0f) { // Enter
@@ -454,7 +474,7 @@ public class Main {
                                     mainForm.pressRight();
                                 }
                             } catch (Exception e) {
-                                e.printStackTrace();
+                                MsgBox.error(e.getMessage(), "Execution Error");
                             }
 
                         }
@@ -466,29 +486,24 @@ public class Main {
             try {
                 Thread.sleep(25);
             } catch (InterruptedException e) {
-                System.out.println(e.getMessage());
+                MsgBox.error(e.getMessage(), "Execution Error");
             }
 
         }
 
-        if (beingConfigured) {
+        try {
+            Class<?> clazz = Class.forName("net.java.games.input.DefaultControllerEnvironment");
+            Constructor<?> defaultConstructor = clazz.getDeclaredConstructor();
+            defaultConstructor.setAccessible(true); // set visibility to public
 
-            try {
-                Class<?> clazz = Class.forName("net.java.games.input.DefaultControllerEnvironment");
-                Constructor<?> defaultConstructor = clazz.getDeclaredConstructor();
-                defaultConstructor.setAccessible(true); // set visibility to public
-
-                Field defaultEnvironementField = ControllerEnvironment.class.getDeclaredField("defaultEnvironment");
-                defaultEnvironementField.setAccessible(true);
-                defaultEnvironementField.set(ControllerEnvironment.getDefaultEnvironment(), defaultConstructor.newInstance());
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
+            Field defaultEnvironementField = ControllerEnvironment.class.getDeclaredField("defaultEnvironment");
+            defaultEnvironementField.setAccessible(true);
+            defaultEnvironementField.set(ControllerEnvironment.getDefaultEnvironment(), defaultConstructor.newInstance());
+        } catch (Exception e) {
+            e.printStackTrace();
         }
 
         if (!breakLoop && !beingConfigured) {
-            System.out.println("Research controllers.");
             searchControllers();
         }
 
@@ -502,6 +517,16 @@ public class Main {
                 mainForm.setStatus("Idle.");
             }
         }, 250);
+    }
+
+    public static void assignPrompt(String t) {
+        mainForm.setStatus("Assign a button for \""+t+"\"...");
+    }
+
+    public static void doneConfigure() {
+        beingConfigured = false;
+        mainForm.controllerList.setEnabled(true);
+        mainForm.configure.setText("Configure");
     }
 
 }

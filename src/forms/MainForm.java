@@ -118,15 +118,6 @@ public class MainForm extends JFrame {
             e.printStackTrace();
         }
 
-//        about.addActionListener(new ActionListener() {
-//            @Override
-//            public void actionPerformed(ActionEvent e) {
-////                try {
-////                    Desktop.getDesktop().browse(new URL("http://coffeecone.com/gameboard").toURI());
-////                    minimizeWindow();
-////                } catch (Exception ignored) {}
-//            }
-//        });
     }
 
     public void populateButtons(int type) {
@@ -472,7 +463,7 @@ public class MainForm extends JFrame {
 
     public void pressButton() {
         if (curBtn < 48) {
-            btn[curBtn].doClick(100);
+            btn[curBtn].doClick(50);
 
             switch (curKeyMap[curBtn].charAt(0)) {
                 case 'a': doType(KeyEvent.VK_A); break;
