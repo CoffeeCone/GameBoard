@@ -37,6 +37,10 @@ public class Main {
 
     private static Boolean beingConfigured = false;
     private static int counter = 0;
+    private static String curConf = "mouse_leftclick";
+    private static String curBtn = "";
+    private static String curCon = "";
+    private static boolean ignoreBtn = false;
 
     public static void main(String[] args) {
         mainForm.setStatus("Loading settings...");
@@ -237,7 +241,6 @@ public class Main {
     private static void startController() {
         String prevDir = "center";
         Boolean breakLoop = false;
-        String curConf = "mouse_leftclick";
 
         while (true) {
 
@@ -245,6 +248,7 @@ public class Main {
             int controllerIndex = mainForm.getController();
             Controller controller = foundControllers.get(controllerIndex);
             String c = controller.getName();
+            curCon = c;
 
             if (!beingConfigured) {
                 if (!configuredController(controller.getName())) {
@@ -262,6 +266,12 @@ public class Main {
                 mainForm.setStatus("Controller unplugged!");
                 mainForm.controllerList.setEnabled(true);
                 doneConfigure();
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        forceResetControllers();
+                    }
+                }, 50);
                 break;
             }
 
@@ -356,6 +366,8 @@ public class Main {
 
                     if (beingConfigured && value == 1.0f) {
 
+                        curBtn = compID.getName();
+
                         if (counter > 16) {
                             counter = 0;
                             try {
@@ -367,44 +379,17 @@ public class Main {
                             mainForm.setStatus("Ready.");
                             doneConfigure();
                         } else {
-                            int result = MsgBox.option("Are you sure you want to assign button " + String.valueOf(compID) + " to " + curConf + "?\nTo disable this function, select NO.\nIf you want to change the button, select CANCEL.","Assign Button");
-                            if (result < 2) {
 
-                                if (result == 0) {
-                                    pref.put(c,curConf,String.valueOf(compID));
-                                } else {
-                                    pref.put(c,curConf,"");
-                                }
-
-                                counter++;
-
-                                switch (counter) {
-                                    case 0: curConf = "mouse_leftclick"; break;
-                                    case 1: curConf = "mouse_rightclick"; break;
-                                    case 2: curConf = "mouse_middleclick"; break;
-                                    case 3: curConf = "key_enter"; break;
-                                    case 4: curConf = "key_windows"; break;
-                                    case 5: curConf = "key_esc"; break;
-                                    case 6: curConf = "key_alttab"; break;
-                                    case 7: curConf = "key_altf4"; break;
-                                    case 8: curConf = "gb_showhide"; break;
-                                    case 9: curConf = "gb_confirm"; break;
-                                    case 10: curConf = "gb_remove"; break;
-                                    case 11: curConf = "gb_removecont"; break;
-                                    case 12: curConf = "gb_space"; break;
-                                    case 13: curConf = "gb_changecase"; break;
-                                    case 14: curConf = "gb_enter"; break;
-                                    case 15: curConf = "gb_left"; break;
-                                    case 16: curConf = "gb_right"; break;
-                                }
-
+                            if (!ignoreBtn) {
+                                ignoreBtn = true;
+                                new Timer().schedule(new TimerTask() {
+                                    @Override
+                                    public void run() {
+                                        configureIncrement();
+                                    }
+                                }, 50);
                             }
-                            //System.out.println(counter);
-                            if (counter <= 16) {
-                                assignPrompt(curConf);
-                            } else {
-                                mainForm.setStatus("Done! Press any button to continue.");
-                            }
+
                         }
 
                     } else if (!beingConfigured) {
@@ -491,6 +476,13 @@ public class Main {
 
         }
 
+        if (!breakLoop && !beingConfigured) {
+            forceResetControllers();
+        }
+
+    }
+
+    private static void forceResetControllers() {
         try {
             Class<?> clazz = Class.forName("net.java.games.input.DefaultControllerEnvironment");
             Constructor<?> defaultConstructor = clazz.getDeclaredConstructor();
@@ -503,10 +495,7 @@ public class Main {
             e.printStackTrace();
         }
 
-        if (!breakLoop && !beingConfigured) {
-            searchControllers();
-        }
-
+        searchControllers();
     }
 
     public static void showTyping() {
@@ -524,9 +513,59 @@ public class Main {
     }
 
     public static void doneConfigure() {
+        counter = 0;
+        curConf = "mouse_leftclick";
+        curBtn = "";
+        curCon = "";
+        ignoreBtn = false;
         beingConfigured = false;
         mainForm.controllerList.setEnabled(true);
         mainForm.configure.setText("Configure");
+    }
+
+    public static void configureIncrement() {
+
+        int result = MsgBox.option("Are you sure you want to assign button " + curBtn + " to " + curConf + "?\nTo disable this function, select NO.\nIf you want to change the button, select CANCEL.","Assign Button");
+        if (result < 2) {
+
+            if (result == 0) {
+                pref.put(curCon,curConf,String.valueOf(curBtn));
+            } else {
+                pref.put(curCon,curConf,"");
+            }
+
+            counter++;
+
+            switch (counter) {
+                case 0: curConf = "mouse_leftclick"; break;
+                case 1: curConf = "mouse_rightclick"; break;
+                case 2: curConf = "mouse_middleclick"; break;
+                case 3: curConf = "key_enter"; break;
+                case 4: curConf = "key_windows"; break;
+                case 5: curConf = "key_esc"; break;
+                case 6: curConf = "key_alttab"; break;
+                case 7: curConf = "key_altf4"; break;
+                case 8: curConf = "gb_showhide"; break;
+                case 9: curConf = "gb_confirm"; break;
+                case 10: curConf = "gb_remove"; break;
+                case 11: curConf = "gb_removecont"; break;
+                case 12: curConf = "gb_space"; break;
+                case 13: curConf = "gb_changecase"; break;
+                case 14: curConf = "gb_enter"; break;
+                case 15: curConf = "gb_left"; break;
+                case 16: curConf = "gb_right"; break;
+            }
+
+        }
+
+        ignoreBtn = false;
+
+        //System.out.println(counter);
+        if (counter <= 16) {
+            assignPrompt(curConf);
+        } else {
+            mainForm.setStatus("Done! Press any button to continue.");
+        }
     }
 
 }
