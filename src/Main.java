@@ -384,6 +384,8 @@ public class Main {
                         hatDir = "center";
                         w.releaseArrowKey();
 
+                        // TODO: Figure out a more dynamic way of making the settings work.
+
                         if (w.getState() == Frame.ICONIFIED) {
 
                             // Desktop mode

@@ -148,6 +148,8 @@ public class MainForm extends JFrame {
         pack();
     }
 
+    // TODO: Make cursor movement smoother somehow.
+
     public void mouseSetX(final int x) {
         try {
             mouseTimerX.cancel();
