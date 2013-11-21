@@ -27,7 +27,7 @@ import java.util.TimerTask;
  */
 
 public class Main {
-    public static String version = "1.1";
+    public static String version = "1.2";
 
     // Define all available key binds.
     public final static String[] keyBinds = {
@@ -67,6 +67,11 @@ public class Main {
     private static boolean ignoreBtn = false;
 
     private static boolean isLooping = false;
+
+    private static Timer mouseTimer;
+    private static boolean moveMouseX = false;
+    private static boolean moveMouseY = false;
+    private static int[] mouseSpeedDiff = {0,0};
 
     public static void main(String[] args) {
         w.status("Loading settings...");
@@ -108,14 +113,13 @@ public class Main {
                     if (MsgBox.question("Would you like to configure this controller?", "Configure")) {
                         beingConfigured = true;
                         w.enableList(false);
-                        w.enableConf(false);
+                        w.enableConf(true);
                         w.confIsCancel(true);
                         assignPrompt("mouse_leftclick");
                         if (!isLooping) {
                             new Timer().schedule(new TimerTask() {
                                 @Override
                                 public void run() {
-                                    w.enableConf(true);
                                     startController();
                                 }
                             }, 250);
@@ -171,7 +175,7 @@ public class Main {
 
                 Component[] components = controller.getComponents();
                 int compCheck = 0;
-                for (Component component : components) {
+                for (Component component : components) { // Checks if controller has d-pad and an X-and-Y analog stick.
                     if (component.getIdentifier().toString().equals("pov") ||
                             component.getIdentifier().toString().equals("x") ||
                             component.getIdentifier().toString().equals("y")) {
@@ -208,7 +212,7 @@ public class Main {
         } else {
             curCon = w.getCon();
             w.enableConf(true);
-            w.status("Done.");
+            w.status("Ready.");
         }
 
         comboStop = false;
@@ -231,20 +235,24 @@ public class Main {
     private static void startController() {
         String hatDir = "center";
         boolean breakLoop = false;
+        boolean mouseMoving = false;
+
+        mouseSpeedDiff[0] = 0;
+        mouseSpeedDiff[1] = 0;
 
         while (true) {
 
             isLooping = true;
 
-            // Get the selected item index on combolist.
             Controller controller = foundControllers.get(w.getConID());
             String c = curCon;
 
+            // Checks if user is in configuring the current controller.
             if (!beingConfigured) {
                 if (!configuredController(controller.getName())) {
                     breakLoop = true;
                     w.restore(true);
-                    w.status("This controller is not configured so click this. =>");
+                    w.status("This controller is not configured so click this button. =>");
                     break;
                 }
             }
@@ -254,7 +262,6 @@ public class Main {
                 breakLoop = true;
                 w.restore(true);
                 w.status("Controller unplugged!");
-                w.enableList(true);
                 doneConfigure();
                 new Timer().schedule(new TimerTask() {
                     @Override
@@ -263,6 +270,19 @@ public class Main {
                     }
                 }, 50);
                 break;
+            }
+
+            // Checks if X, Y, or both axes is being used by the user.
+            if (moveMouseX || moveMouseY) {
+                if (!mouseMoving) {
+                    mouseMoving = true;
+                    mouseSpeedDiff[1] = mouseSpeedDiff[0];
+                    mouseStop();
+                    mouseMove(mouseSpeedDiff[0]);
+                }
+            } else {
+                mouseStop();
+                mouseMoving = false;
             }
 
             EventQueue queue = controller.getEventQueue();
@@ -278,9 +298,11 @@ public class Main {
                 }
 
                 if (component.isAnalog()) { // Analog sticks
+
                    if (!beingConfigured) {
+
                        float fX, fY;
-                       int x, y;
+                       int x = 0, y = 0;
 
                        w.minimize();
 
@@ -290,27 +312,54 @@ public class Main {
                                fX = component.getPollData();
                                fX = fX * 10.0f;
                                x = Math.round(fX);
-                               w.mouseX = x;
-                               w.mouseSetX(x);
+                               if (x != 0) {
+                                   if (Math.abs(x) == x) {
+                                       w.mouseIncX = 5;
+                                   } else {
+                                       w.mouseIncX = -5;
+                                   }
+                                   moveMouseX = true;
+                               } else {
+                                   w.mouseIncX = 0;
+                                   moveMouseX = false;
+                               }
                            }
 
                            if (compID == Component.Identifier.Axis.Y) {
                                fY = component.getPollData();
                                fY = fY * 10.0f;
                                y = Math.round(fY);
-                               w.mouseY = y;
-                               w.mouseSetY(y);
+                               if (y != 0) {
+                                   if (Math.abs(y) == y) {
+                                       w.mouseIncY = 5;
+                                   } else {
+                                       w.mouseIncY = -5;
+                                   }
+                                   moveMouseY = true;
+                               } else {
+                                   w.mouseIncY = 0;
+                                   moveMouseY = false;
+                               }
+                           }
+
+                           if (Math.abs(x) > Math.abs(y)) {
+                               mouseSpeedDiff[0] = Math.abs(x);
+                           } else {
+                               mouseSpeedDiff[0] = Math.abs(y);
                            }
 
                        }
+
                    }
 
                 } else if (compID == Component.Identifier.Axis.POV) { // Hat switches
+
                     if (!beingConfigured) {
 
                         showTyping();
 
                         if (w.getState() == Frame.NORMAL) {
+
                             if (Float.compare(value, Component.POV.UP) == 0) {
                                 w.selectButton("up");
                             } else if (Float.compare(value, Component.POV.DOWN) == 0) {
@@ -320,7 +369,9 @@ public class Main {
                             } else if (Float.compare(value, Component.POV.RIGHT) == 0) {
                                 w.selectButton("right");
                             }
+
                         } else if (w.getState() == Frame.ICONIFIED) {
+
                             if (Float.compare(value, Component.POV.UP) == 0) {
                                 if (!hatDir.equals("up")) {
                                     w.releaseArrowKey();
@@ -349,7 +400,9 @@ public class Main {
                                 hatDir = "center";
                                 w.releaseArrowKey();
                             }
+
                         }
+
                     }
 
                 } else { // Buttons
@@ -359,6 +412,7 @@ public class Main {
                         curBtn = compID.getName();
 
                         if (counter < keyBinds.length) {
+
                             if (!ignoreBtn) {
                                 ignoreBtn = true;
                                 new Timer().schedule(new TimerTask() {
@@ -425,6 +479,7 @@ public class Main {
                                     w.pressCtrlShiftTab();
                                 }
                             } catch (Exception e) {
+                                e.printStackTrace();
                                 MsgBox.error(e.getMessage(),"Execution Error");
                             }
 
@@ -464,10 +519,12 @@ public class Main {
                                     w.pressRight();
                                 }
                             } catch (Exception e) {
+                                e.printStackTrace();
                                 MsgBox.error(e.getMessage(), "Execution Error");
                             }
 
                         }
+
                     }
 
                 }
@@ -476,6 +533,7 @@ public class Main {
             try {
                 Thread.sleep(25);
             } catch (InterruptedException e) {
+                e.printStackTrace();
                 MsgBox.error(e.getMessage(), "Execution Error");
             }
 
@@ -489,6 +547,8 @@ public class Main {
 
     }
 
+    // Temporary fix to JInput bug. This forces reset the list of controllers available.
+    // Hope this gets fixed soon.
     private static void forceResetControllers() {
         try {
             Class<?> clazz = Class.forName("net.java.games.input.DefaultControllerEnvironment");
@@ -503,6 +563,44 @@ public class Main {
         }
 
         searchControllers();
+    }
+
+    private static void mouseMove(int s) {
+        int[] diffMap = {30,25,20,15,10}; // Cursor speed settings. Higher is slower.
+        int diff = s-6;
+        if (diff < 0) {
+            diff = 0;
+        }
+
+        mouseTimer = new Timer();
+
+        try {
+            mouseTimer.schedule( new TimerTask() {
+                @Override
+                public void run() {
+                    if (Math.abs(mouseSpeedDiff[0]-mouseSpeedDiff[1]) > 0) {
+                        mouseSpeedDiff[1] = mouseSpeedDiff[0];
+                        cancel();
+                        mouseStop();
+                        mouseMove(mouseSpeedDiff[0]);
+                    } else {
+                        w.mouseSet();
+                    }
+                }
+            },diffMap[diff],diffMap[diff]);
+        } catch (Exception e) {
+            System.out.println(diff);
+            e.printStackTrace();
+            MsgBox.error(e.getMessage(), "Error");
+        }
+
+    }
+
+    private static void mouseStop() {
+        try {
+            mouseTimer.cancel();
+            mouseTimer.purge();
+        } catch (Exception ignored) {}
     }
 
     public static void showTyping() {
@@ -565,6 +663,5 @@ public class Main {
             MsgBox.error(e.getMessage(), "File Write Error");
         }
     }
-
 
 }

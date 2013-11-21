@@ -72,12 +72,26 @@ public class MainForm extends JFrame {
     public JButton configure;
     public JButton about;
 
-    private int curShift = 0;
-    private String[] curKeyMap = new String[] {
+    private int curLayout = -1;
+    private String[][] keyMap = new String[][] {
+            { // Default layout
             "a","b","c","d","e","f","g","h","i","j","k","l",
             "m","n","o","p","q","r","s","t","u","v","w","x",
             "y","z","0","1","2","3","4","5","6","7","8","9",
             ",",".",":",";","?","!","@","^","_","-","/","\\"
+            }
+            ,{ // Caps layout
+            "A","B","C","D","E","F","G","H","I","J","K","L",
+            "M","N","O","P","Q","R","S","T","U","V","W","X",
+            "Y","Z","0","1","2","3","4","5","6","7","8","9",
+            "~","#","+","'","\"","*","<",">","(",")","[","]"
+            }
+//            ,{ // Extra layout
+//            "F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12",
+//            "`","0","1","2","3","4","5","6","7","8","9","0",
+//            "","","","","","","","","","","","",
+//            "","","","","","","","","","","",""
+//            }
     };
     private JButton[] btn = {
             btnA1, btnA2, btnA3, btnA4, btnA5, btnA6, btnA7, btnA8, btnA9, btnA10, btnA11, btnA12,
@@ -92,10 +106,8 @@ public class MainForm extends JFrame {
     private boolean continueBackspace = false;
     private Timer backspaceTimer;
     private Timer arrowKeysTimer;
-    private Timer mouseTimerX;
-    private Timer mouseTimerY;
-    public int mouseX = 0;
-    public int mouseY = 0;
+    public int mouseIncX = 0;
+    public int mouseIncY = 0;
 
 
     public MainForm() {
@@ -109,6 +121,8 @@ public class MainForm extends JFrame {
         pack();
         setVisible(true);
 
+        changeCase();
+
         try {
             typeBot = new Robot();
         } catch (AWTException e) {
@@ -117,105 +131,23 @@ public class MainForm extends JFrame {
 
     }
 
-    public void populateButtons(int type) {
-        String[] row;
+    public void changeCase() {
+        curLayout++;
 
-        switch (type) {
-            case 1:
-                row = new String[] {
-                        "A","B","C","D","E","F","G","H","I","J","K","L",
-                        "M","N","O","P","Q","R","S","T","U","V","W","X",
-                        "Y","Z","0","1","2","3","4","5","6","7","8","9",
-                        ",",".",":",";","?","!","@","^","_","-","/","\\"
-                };
-                break;
-            case 0:
-            default:
-                row = new String[] {
-                        "a","b","c","d","e","f","g","h","i","j","k","l",
-                        "m","n","o","p","q","r","s","t","u","v","w","x",
-                        "y","z","0","1","2","3","4","5","6","7","8","9",
-                        ",",".",":",";","?","!","@","^","_","-","/","\\"
-                };
-                break;
+        if (curLayout > (keyMap.length-1)) {
+            curLayout = 0;
         }
 
         for (int i = 0; i < 48; i++) {
-            btn[i].setText(row[i]);
-        }
-
-        curKeyMap = row;
-        pack();
-    }
-
-    // TODO: Make cursor movement smoother somehow.
-
-    public void mouseSetX(final int x) {
-        try {
-            mouseTimerX.cancel();
-            mouseTimerX.purge();
-        } catch (Exception ignored) {
-        }
-
-        if (Math.abs(x) == x) {
-            mouseTimerX = new Timer();
-            mouseTimerX.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (mouseX == 0) {
-                        cancel();
-                    } else {
-                        typeBot.mouseMove((MouseInfo.getPointerInfo().getLocation().x + (Math.abs(x)-2)), MouseInfo.getPointerInfo().getLocation().y);
-                    }
-                }
-            }, 25, 25);
-        }  else {
-            mouseTimerX = new Timer();
-            mouseTimerX.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (mouseX == 0) {
-                        cancel();
-                    } else {
-                        typeBot.mouseMove((MouseInfo.getPointerInfo().getLocation().x - (Math.abs(x)-2)), MouseInfo.getPointerInfo().getLocation().y);
-                    }
-                }
-            }, 25, 25);
+            btn[i].setText(keyMap[curLayout][i]);
         }
     }
 
-    public void mouseSetY(final int y) {
-        try {
-            mouseTimerY.cancel();
-            mouseTimerY.purge();
-        } catch (Exception ignored) {
-        }
+    public void mouseSet() {
+        int mouseX = MouseInfo.getPointerInfo().getLocation().x + mouseIncX;
+        int mouseY = MouseInfo.getPointerInfo().getLocation().y + mouseIncY;
 
-        if (Math.abs(y) == y) {
-            mouseTimerY = new Timer();
-            mouseTimerY.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (mouseY == 0) {
-                        cancel();
-                    } else {
-                        typeBot.mouseMove((MouseInfo.getPointerInfo().getLocation().x), MouseInfo.getPointerInfo().getLocation().y + (Math.abs(y)-2));
-                    }
-                }
-            }, 25, 25);
-        } else {
-            mouseTimerY = new Timer();
-            mouseTimerY.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    if (mouseY == 0) {
-                        cancel();
-                    } else {
-                        typeBot.mouseMove((MouseInfo.getPointerInfo().getLocation().x), MouseInfo.getPointerInfo().getLocation().y - (Math.abs(y)-2));
-                    }
-                }
-            }, 25, 25);
-        }
+        typeBot.mouseMove(mouseX, mouseY);
     }
 
     public void restore(boolean center) {
@@ -284,13 +216,7 @@ public class MainForm extends JFrame {
     public void pressShift() {
         btnShift.doClick(100);
 
-        if (curShift == 1) {
-            populateButtons(0);
-            curShift = 0;
-        } else {
-            populateButtons(1);
-            curShift = 1;
-        }
+        changeCase();
     }
 
     public void selectButton(String direction) {
@@ -433,30 +359,6 @@ public class MainForm extends JFrame {
         }, 75, 75);
     }
 
-    public void pressShiftKey() {
-        typeBot.keyPress(KeyEvent.VK_SHIFT);
-    }
-
-    public void releaseShiftKey() {
-        typeBot.keyRelease(KeyEvent.VK_SHIFT);
-    }
-
-    public void pressAltKey() {
-        typeBot.keyPress(KeyEvent.VK_ALT);
-    }
-
-    public void releaseAltKey() {
-        typeBot.keyRelease(KeyEvent.VK_ALT);
-    }
-
-    public void pressCtrlKey() {
-        typeBot.keyPress(KeyEvent.VK_CONTROL);
-    }
-
-    public void releaseCtrlKey() {
-        typeBot.keyRelease(KeyEvent.VK_CONTROL);
-    }
-
     public void pressWinKey() {
         typeBot.keyPress(KeyEvent.VK_WINDOWS);
     }
@@ -465,15 +367,13 @@ public class MainForm extends JFrame {
         typeBot.keyRelease(KeyEvent.VK_WINDOWS);
     }
 
-    public void pressTabKey() {
-        typeBot.keyRelease(KeyEvent.VK_TAB);
-    }
-
     public void pressButton() {
         if (curBtn < 48) {
             btn[curBtn].doClick(50);
 
-            switch (curKeyMap[curBtn].charAt(0)) {
+            switch (keyMap[curLayout][curBtn].charAt(0)) {
+
+                // Default layout
                 case 'a': doType(KeyEvent.VK_A); break;
                 case 'b': doType(KeyEvent.VK_B); break;
                 case 'c': doType(KeyEvent.VK_C); break;
@@ -501,6 +401,7 @@ public class MainForm extends JFrame {
                 case 'y': doType(KeyEvent.VK_Y); break;
                 case 'z': doType(KeyEvent.VK_Z); break;
 
+                // Caps layout
                 case 'A': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_A); break;
                 case 'B': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_B); break;
                 case 'C': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_C); break;
@@ -551,6 +452,23 @@ public class MainForm extends JFrame {
                 case '-': doType(KeyEvent.VK_MINUS); break;
                 case '/': doType(KeyEvent.VK_SLASH); break;
                 case '\\': doType(KeyEvent.VK_BACK_SLASH); break;
+
+                case '~': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_BACK_QUOTE); break;
+                case '#': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_3); break;
+                case '+': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_EQUALS); break;
+                case '\'': doType(KeyEvent.VK_QUOTE); break;
+                case '"': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_QUOTE); break;
+                case '*': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_8); break;
+                case '<': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_COMMA); break;
+                case '>': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_PERIOD); break;
+                case '(': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_9); break;
+                case ')': doType(KeyEvent.VK_SHIFT, KeyEvent.VK_0); break;
+                case '[': doType(KeyEvent.VK_OPEN_BRACKET); break;
+                case ']': doType(KeyEvent.VK_CLOSE_BRACKET); break;
+
+                default:
+                    // Do nothing when key is unsupported.
+                    break;
             }
         } else {
             switch (curBtn) {
@@ -585,7 +503,7 @@ public class MainForm extends JFrame {
     }
 
     public void status(String message) {
-        status.setText("Status: " + message);
+        status.setText(message);
     }
 
     public void clearControllers() {

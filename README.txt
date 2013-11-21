@@ -1,4 +1,4 @@
-GameBoard v1.1
+GameBoard v1.2
 by Shedo Surashu
 http://coffeecone.com/gameboard
 
@@ -32,4 +32,4 @@ I haven't tried that yet. But I included the necessary library
 files on the distribution anyway so feel free to try it out
 on your platform.
 
-Last modified: November 20, 2013 3:34AM GMT +8:00
+Last modified: November 21, 2013 11:01AM GMT +8:00

@@ -1,3 +1,13 @@
+Version 1.2
+-----------
++ Added Ctrl + Tab and Ctrl + Shift + Tab to the key bindings. (Desktop Mode)
++ Added more symbols accessible via Change Case (found on the uppercase letter layout).
+* More fluid cursor movement.
+* Varying cursor speed relative to how much the analog stick is pushed in a direction.
+* Made the on-screen keyboard font size bigger.
+* Changed the way keyboard layouts are read.
+- Removed my FuSa GamePad configuration from the INI file.
+
 Version 1.1
 -----------
 + Ability to custom bind keys via the interface.
